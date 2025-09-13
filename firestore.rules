@@ -1,0 +1,45 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can read/write their own user doc, pharmacy, admin, and superuser can read all
+    match /users/{userId} {
+      allow read, write: if request.auth.uid == userId || isPharmacyOrAdmin();
+
+      // Users can read/write their own cart items
+      match /cart/{cartItemId} {
+        allow read, write: if request.auth.uid == userId;
+      }
+    }
+    // Pharmacies (only one in your case)
+    match /pharmacies/{pharmacyId} {
+      allow read: if true;
+      allow write: if request.auth.uid == pharmacyId;
+    }
+    // Products: anyone can read, only pharmacy can write
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if request.auth.uid == resource.data.pharmacyId;
+    }
+    // Orders: customer and pharmacy can read/write their own
+    match /orders/{orderId} {
+      // Customers can read their own orders; pharmacy/admin/superuser can read all; pharmacy can read orders for their pharmacyId
+      allow read: if resource.data.customerId == request.auth.uid 
+                || resource.data.pharmacyId == request.auth.uid 
+                || isPharmacyOrAdmin();
+
+      // Customers can create their own orders; pharmacy/admin/superuser can create for anyone
+      allow create: if request.auth != null && (
+        request.resource.data.customerId == request.auth.uid || isPharmacyOrAdmin()
+      ) && request.resource.data.customerId != null;
+
+      // Customers can update their own orders (optional); pharmacy/admin/superuser can update all
+      allow update: if isPharmacyOrAdmin();
+
+      // Only pharmacy/admin/superuser can delete orders
+      allow delete: if isPharmacyOrAdmin();
+    }
+  }
+  function isPharmacyOrAdmin() {
+    return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['pharmacy', 'admin', 'superuser'];
+  }
+}
