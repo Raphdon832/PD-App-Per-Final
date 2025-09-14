@@ -3,8 +3,10 @@ import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/lib/auth';
 
 export default function ProductManager() {
+  const { user } = useAuth();
   const [products, setProducts] = useState([]);
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
@@ -27,7 +29,7 @@ export default function ProductManager() {
       price: Number(price),
       image,
       createdAt: new Date(),
-      // Optionally add pharmacyId if you want to restrict
+      pharmacyId: user?.uid || '', // Ensure pharmacyId is set
     });
     setName('');
     setPrice('');

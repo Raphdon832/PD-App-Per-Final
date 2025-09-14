@@ -26,7 +26,9 @@ export default function AddProductModal({ pharmacyId, onClose }) {
       }
       // Parse tags into array
       const tagsArr = (form.tags||'').split(',').map(t=>t.trim()).filter(Boolean);
-      await addProduct({ ...form, image: imageUrl, price: Number(form.price), pharmacyId, tags: tagsArr });
+      const productData = { ...form, image: imageUrl, price: Number(form.price), pharmacyId, tags: tagsArr };
+      console.log('Submitting product:', productData); // Debug log
+      await addProduct(productData);
       onClose();
     } catch (e) {
       alert(e.message);

@@ -18,7 +18,7 @@ service cloud.firestore {
     // Products: anyone can read, only pharmacy can write
     match /products/{productId} {
       allow read: if true;
-      allow write: if request.auth.uid == resource.data.pharmacyId;
+      allow write: if request.auth.uid == request.resource.data.pharmacyId;
     }
     // Orders: customer and pharmacy can read/write their own
     match /orders/{orderId} {
