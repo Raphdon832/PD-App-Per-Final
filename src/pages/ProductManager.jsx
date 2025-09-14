@@ -60,7 +60,13 @@ export default function ProductManager() {
               <div className="text-brand-accent">₦{Number(p.price).toLocaleString()}</div>
             </div>
             <div className="flex items-center gap-2">
-              {p.image && <img src={p.image} alt="" className="h-10 w-10 object-cover rounded" />}
+              {p.image ? (
+                <img src={p.image} alt="" className="h-10 w-10 object-cover rounded" />
+              ) : (
+                <div className="h-10 w-10 flex items-center justify-center rounded bg-zinc-200 text-brand-primary font-bold text-lg">
+                  {p.name?.charAt(0)?.toUpperCase() || '?'}
+                </div>
+              )}
               <Button size="sm" variant="destructive" onClick={() => removeProduct(p.id)} disabled={loading}>Delete</Button>
             </div>
           </div>

@@ -71,8 +71,16 @@ export default function ProfilePharmacy({ onSwitchToCustomer }) {
 
   async function handleSaveProduct() {
     if (!editingProduct) return;
+    // Check if product exists before updating
+    const productRef = doc(db, 'products', editingProduct.id);
+    const snap = await getDoc(productRef);
+    if (!snap.exists()) {
+      alert('Product does not exist or was deleted.');
+      setEditingProduct(null);
+      return;
+    }
     let imageUrl = editImage;
-    await updateDoc(doc(db, 'products', editingProduct.id), {
+    await updateDoc(productRef, {
       name: editName,
       category: editCategory,
       stock: Number(editStock),
