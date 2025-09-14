@@ -2,7 +2,7 @@
 import { db } from './firebase';
 import {
   collection, query, where, orderBy, addDoc, doc, getDoc, getDocs, setDoc, updateDoc,
-  deleteDoc, onSnapshot, serverTimestamp, writeBatch, increment, limit
+  deleteDoc, onSnapshot, serverTimestamp, writeBatch, increment, limit, runTransaction
 } from 'firebase/firestore';
 
 // For single-pharmacy, use the actual pharmacy UID
@@ -36,13 +36,12 @@ export const getAllPharmacies = async () => {
 /* -----------------------------
    PRODUCTS / CART / ORDERS (unchanged)
 ----------------------------------*/
-export const listenProducts = (cb, pharmacyId = null) => {
+export const listenProducts = (cb, pharmacyId = null, pageSize = 50) => {
   const base = collection(db, 'products');
-  const q = pharmacyId
-    ? query(base, where('pharmacyId', '==', pharmacyId), orderBy('createdAt', 'desc'))
-    : query(base, orderBy('createdAt', 'desc'));
-  return onSnapshot(
-    q,
+  const qy = pharmacyId
+    ? query(base, where('pharmacyId', '==', pharmacyId), orderBy('createdAt', 'desc'), limit(pageSize))
+    : query(base, orderBy('createdAt', 'desc'), limit(pageSize));
+  return onSnapshot(qy,
     s => cb(s.docs.map(d => ({ id: d.id, ...d.data() }))),
     e => console.error('listenProducts error:', e)
   );
@@ -71,8 +70,8 @@ export const bulkAddProducts = async (rows, pharmacyId) => {
 export const removeProduct = (id) => deleteDoc(doc(db, 'products', id));
 
 export const addToCart = async (uid, productId, qty = 1) => {
-  const ref = doc(collection(db, 'users', uid, 'cart'));
-  await setDoc(ref, { productId, qty });
+  const ref = doc(db, 'users', uid, 'cart', productId);
+  await setDoc(ref, { productId, qty: increment(qty) }, { merge: true });
 };
 export const listenCart = (uid, cb) =>
   onSnapshot(collection(db, 'users', uid, 'cart'),
@@ -81,8 +80,23 @@ export const listenCart = (uid, cb) =>
   );
 export const removeFromCart = (uid, itemId) => deleteDoc(doc(db, 'users', uid, 'cart', itemId));
 
-export const placeOrder = async ({ customerId, pharmacyId, items, total }) =>
-  addDoc(collection(db, 'orders'), { customerId, pharmacyId, items, total, createdAt: serverTimestamp() });
+export const placeOrder = async ({ customerId, pharmacyId, items, total }) => {
+  return await runTransaction(db, async (tx) => {
+    for (const it of items) {
+      const pRef = doc(db, 'products', it.productId);
+      const pSnap = await tx.get(pRef);
+      if (!pSnap.exists()) throw new Error('Product not found');
+      const stock = Number(pSnap.data().stock || 0);
+      if (stock < it.quantity) throw new Error('Insufficient stock for ' + (pSnap.data().name || it.productId));
+      tx.update(pRef, { stock: stock - it.quantity, sold: increment(it.quantity) });
+    }
+    const orderRef = doc(collection(db, 'orders'));
+    tx.set(orderRef, { customerId, pharmacyId, items, total, status: 'placed', createdAt: serverTimestamp() });
+    const cartSnap = await getDocs(collection(db, 'users', customerId, 'cart'));
+    cartSnap.forEach(c => tx.delete(c.ref));
+    return { id: orderRef.id };
+  });
+};
 
 export const listenOrders = (uid, cb) => {
   const q = query(collection(db, 'orders'), where('customerId', '==', uid), orderBy('createdAt', 'desc'));
@@ -134,4 +148,62 @@ export const getBestSellingProducts = async (limitCount = 5, pharmacyId) => {
     sold: p.sold,
     dateAdded: p.dateAdded
   }));
-}
+};
+
+/**
+ * items: [{ productId, quantity }]
+ * Saves order with item snapshots: { productId, name, priceAtOrder, quantity, imageUrl? }
+ */
+export const placeOrderWithSnapshot = async ({ customerId, pharmacyId, items, total }) => {
+  return await runTransaction(db, async (tx) => {
+    // Build refs & fetch product docs (read inside transaction)
+    const productRefs = items.map(it => doc(db, 'products', it.productId));
+    const productSnaps = await Promise.all(productRefs.map(ref => tx.get(ref)));
+
+    // Validate, collect snapshots, and decrement stock
+    const snapshotItems = [];
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      const snap = productSnaps[i];
+      if (!snap.exists()) throw new Error('Product not found');
+
+      const p = snap.data();
+      const stock = Number(p.stock || 0);
+      const qty = Number(items[i].quantity || items[i].qty || 0);
+      if (qty <= 0) throw new Error('Invalid quantity');
+      if (stock < qty) throw new Error(`Insufficient stock for ${p.name || it.productId}`);
+
+      // decrement stock & bump sold
+      tx.update(productRefs[i], {
+        stock: stock - qty,
+        sold: increment(qty)
+      });
+
+      snapshotItems.push({
+        productId: productRefs[i].id,
+        name: String(p.name || ''),
+        priceAtOrder: Number(p.price || 0),
+        quantity: qty,
+        imageUrl: p.imageUrl || null
+      });
+    }
+
+    // Write order (use your own doc id if needed)
+    const orderRef = doc(collection(db, 'orders'));
+    tx.set(orderRef, {
+      customerId,
+      pharmacyId,
+      items: snapshotItems,
+      total: Number(total || 0),
+      status: 'placed',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+
+    // Optionally clear cart (if you store user carts)
+    const cartSnap = await getDocs(collection(db, 'users', customerId, 'cart'));
+    cartSnap.forEach(c => tx.delete(c.ref));
+
+    return { id: orderRef.id };
+  });
+};

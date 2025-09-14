@@ -4,6 +4,7 @@ import AddProductModal from '@/components/AddProductModal';
 import BulkUploadModal from '@/components/BulkUploadModal';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import ProductEditModal from '@/components/ProductEditModal';
+import PharmacyOrdersSection from '@/components/PharmacyOrdersSection';
 import { collection, query, where, getDocs, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -22,21 +23,36 @@ export default function Dashboard() {
   useEffect(() => {
     async function fetchStats() {
       setLoading(true);
-      if (!profile || profile.role !== 'pharmacy') {
+      try {
+        if (!profile || profile.role !== 'pharmacy') {
+          setTotalProducts(0);
+          setTotalOrders(0);
+          setProducts([]);
+          setLoading(false);
+          return;
+        }
+        // Debug: log profile info before queries
+        console.log('Dashboard: profile.uid', profile.uid, 'profile.role', profile.role);
+        // Total products
+        const productsSnap = await getDocs(query(collection(db, 'products'), where('pharmacyId', '==', profile.uid)));
+        setTotalProducts(productsSnap.size);
+        setProducts(productsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+        // Orders
+        const ordersSnap = await getDocs(query(collection(db, 'orders'), where('pharmacyId', '==', profile.uid)));
+        ordersSnap.forEach(doc => {
+          console.log('Order doc:', doc.id, doc.data());
+        });
+        setTotalOrders(ordersSnap.size);
+        setLoading(false);
+      } catch (err) {
+        setLoading(false);
+        setProducts([]);
         setTotalProducts(0);
         setTotalOrders(0);
-        setProducts([]);
-        setLoading(false);
-        return;
+        window.dashboardFetchError = err; // For debugging in console
+        // Debug: log error and profile
+        console.error('Dashboard Firestore error:', err, 'profile:', profile);
       }
-      // Total products
-      const productsSnap = await getDocs(query(collection(db, 'products'), where('pharmacyId', '==', profile.uid)));
-      setTotalProducts(productsSnap.size);
-      setProducts(productsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-      // Orders
-      const ordersSnap = await getDocs(query(collection(db, 'orders'), where('pharmacyId', '==', profile.uid)));
-      setTotalOrders(ordersSnap.size);
-      setLoading(false);
     }
     fetchStats();
   }, [profile]);
@@ -60,6 +76,30 @@ export default function Dashboard() {
 
   if (loading) {
     return <LoadingSkeleton lines={6} className="my-8" />;
+  }
+
+  // Error fallback for failed Firestore queries
+  if (!profile || (profile.role === 'pharmacy' && products.length === 0 && totalProducts === 0)) {
+    if (window.dashboardFetchError) {
+      return (
+        <div className="pt-10 pb-28 w-full max-w-md mx-auto px-4 min-h-screen flex flex-col items-center justify-center">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+            <div className="text-red-600 font-bold text-lg mb-2">Error loading dashboard</div>
+            <div className="text-red-500 text-sm mb-2">{window.dashboardFetchError.message}</div>
+            <div className="text-zinc-500 text-xs">Check your Firestore rules and ensure your user document has <code>role: 'pharmacy'</code> set.</div>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="pt-10 pb-28 w-full max-w-md mx-auto px-4 min-h-screen flex flex-col items-center justify-center">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+          <div className="text-red-600 font-bold text-lg mb-2">Error loading dashboard</div>
+          <div className="text-red-500 text-sm mb-2">Possible Firestore permission error or missing pharmacy role.</div>
+          <div className="text-zinc-500 text-xs">Check your Firestore rules and ensure your user document has <code>role: 'pharmacy'</code> set.</div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -150,6 +190,8 @@ export default function Dashboard() {
               Download Inventory (CSV)
             </button>
           )}
+          {/* Pharmacy Orders Section - placed after Download Inventory button */}
+          <PharmacyOrdersSection pharmacyId={profile?.uid} />
           {showEdit && editProduct && (
             <ProductEditModal
               product={editProduct}
