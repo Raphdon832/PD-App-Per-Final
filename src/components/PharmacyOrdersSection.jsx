@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { processOrderAndReserveStock, updateOrderStatus } from '@/lib/orders';
 import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -30,14 +31,21 @@ export default function PharmacyOrdersSection({ pharmacyId }) {
     fetchOrders();
   }, [pharmacyId]);
 
-  const handleStatusChange = async (orderId, newStatus) => {
-    setOrders(orders => orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+  async function onChangeStatus(order, value) {
     try {
-      await updateDoc(doc(db, 'orders', orderId), { status: newStatus });
-    } catch (err) {
-      alert('Failed to update status');
+      const next = String(value).trim();
+      if (order.status === 'placed' && next === 'processing') {
+        await processOrderAndReserveStock(order.id); // reserves stock + sets status
+      } else {
+        await updateOrderStatus(order.id, next);     // simple status change
+      }
+      // Optionally refresh UI here
+      // await fetchOrders();
+    } catch (e) {
+      console.error('Status change failed:', e);
+      alert(e.message || 'Failed to change status');
     }
-  };
+  }
 
   if (loading) return <div className="text-center text-zinc-400">Loading orders...</div>;
   if (!orders.length) return <div className="text-center text-zinc-400">No orders found.</div>;
@@ -61,13 +69,15 @@ export default function PharmacyOrdersSection({ pharmacyId }) {
             <div className="mt-2">
               <label className="font-medium text-zinc-800 mr-2">Status:</label>
               <select
-                value={order.status || 'processing'}
-                onChange={e => handleStatusChange(order.id, e.target.value)}
+                value={order.status || 'placed'}
+                onChange={e => onChangeStatus(order, e.target.value)}
                 className="border rounded px-2 py-1 text-sm"
               >
-                {STATUS_OPTIONS.map(opt => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
+                <option value="placed">placed</option>
+                <option value="processing">processing</option>
+                <option value="shipped">shipped</option>
+                <option value="completed">completed</option>
+                <option value="cancelled">cancelled</option>
               </select>
             </div>
           </div>

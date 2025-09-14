@@ -3,16 +3,23 @@ import { useAuth } from '@/lib/auth';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { User, Package } from 'lucide-react';
+import { ensureItemNames } from '@/lib/orders-view';
 
 export default function Profile() {
   const { user, logout } = useAuth();
   const [orders, setOrders] = useState([]);
+  const [showAllOrders, setShowAllOrders] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     const q = query(collection(db, 'orders'), where('customerId', '==', user.uid));
     const unsub = onSnapshot(q, (snap) => {
-      setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const loadedOrders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      async function hydrate() {
+        const hydrated = await Promise.all(loadedOrders.map(o => ensureItemNames(o)));
+        setOrders(hydrated);
+      }
+      hydrate();
     });
     return () => unsub();
   }, [user]);
@@ -49,13 +56,13 @@ export default function Profile() {
         <div className="rounded-3xl bg-white shadow px-6 py-6 border border-brand-accent/10">
           <div className="flex items-center gap-2 mb-4">
             <Package className="h-5 w-5 text-brand-accent" />
-            <div className="text-lg font-semibold text-brand-accent">Your Orders</div>
+            <div className="text-lg font-semibold text-brand-accent">Your Orders <span className="ml-1 text-xs font-normal text-brand-primary/70">({orders.length})</span></div>
           </div>
           <div className="space-y-4">
             {orders.length === 0 && (
               <div className="text-sm text-zinc-400 text-center">No orders yet.</div>
             )}
-            {orders.map(order => (
+            {(showAllOrders ? orders : orders.slice(0,2)).map(order => (
               <div key={order.id} className="rounded-xl border border-brand-primary/10 bg-brand-primary/5 px-4 py-3 flex flex-col gap-1">
                 <div className="flex items-center justify-between">
                   <div className="text-sm font-semibold text-brand-primary">Order #{order.id.slice(0,8)}</div>
@@ -63,16 +70,29 @@ export default function Profile() {
                     {order.createdAt ? new Date(order.createdAt.seconds*1000).toLocaleString() : ''}
                   </div>
                 </div>
-                <div className="mt-1 text-xs text-zinc-600">
-                  {Array.isArray(order.products)
-                    ? order.products.map(p => p.name).join(', ')
-                    : '—'}
-                </div>
+                <ul className="mt-2 space-y-1">
+                  {order.items?.slice(0,3).map((it, idx) => (
+                    <li key={idx}>Name: {it.name || '(unknown)'} | Qty: {it.quantity}</li>
+                  ))}
+                  {order.items?.length > 3 && (
+                    <li className="text-sm opacity-70">+{order.items.length - 3} more…</li>
+                  )}
+                </ul>
                 <div className="mt-1 text-xs font-medium text-brand-accent">
                   {order.status ? order.status : 'Processing'}
                 </div>
               </div>
             ))}
+            {orders.length > 2 && !showAllOrders && (
+              <button className="text-brand-primary text-sm mt-2" onClick={() => setShowAllOrders(true)}>
+                See more
+              </button>
+            )}
+            {orders.length > 2 && showAllOrders && (
+              <button className="text-brand-primary text-sm mt-2" onClick={() => setShowAllOrders(false)}>
+                See less
+              </button>
+            )}
           </div>
         </div>
       </div>

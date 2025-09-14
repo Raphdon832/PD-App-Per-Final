@@ -80,22 +80,96 @@ export const listenCart = (uid, cb) =>
   );
 export const removeFromCart = (uid, itemId) => deleteDoc(doc(db, 'users', uid, 'cart', itemId));
 
+/**
+ * placeOrder
+ * - items: [{ productId, quantity }]
+ * - customerId: string
+ * - pharmacyId: string
+ * - total: number
+ *
+ * Reads happen first (inside tx): product docs.
+ * Writes happen second (inside tx): stock decrements + order doc.
+ * Cart clearing happens AFTER tx (outside) in a separate batch.
+ */
 export const placeOrder = async ({ customerId, pharmacyId, items, total }) => {
-  return await runTransaction(db, async (tx) => {
-    for (const it of items) {
-      const pRef = doc(db, 'products', it.productId);
-      const pSnap = await tx.get(pRef);
-      if (!pSnap.exists()) throw new Error('Product not found');
-      const stock = Number(pSnap.data().stock || 0);
-      if (stock < it.quantity) throw new Error('Insufficient stock for ' + (pSnap.data().name || it.productId));
-      tx.update(pRef, { stock: stock - it.quantity, sold: increment(it.quantity) });
+  // Normalize incoming items early
+  const normalized = (items || []).map(it => ({
+    productId: String(it.productId || it.id),
+    quantity: Number(it.quantity ?? it.qty ?? 0)
+  })).filter(it => it.productId && it.quantity > 0);
+
+  if (normalized.length === 0) throw new Error('No valid items to order.');
+
+  // Build product refs once
+  const productRefs = normalized.map(it => doc(db, 'products', it.productId));
+
+  // TRANSACTION
+  const result = await runTransaction(db, async (tx) => {
+    // ----- READS (must be before any writes)
+    const productSnaps = await Promise.all(productRefs.map(ref => tx.get(ref)));
+
+    // Validate stock and prepare snapshot items
+    const snapshotItems = [];
+    for (let i = 0; i < normalized.length; i++) {
+      const it = normalized[i];
+      const snap = productSnaps[i];
+      if (!snap.exists()) throw new Error('Product not found: ' + it.productId);
+      const p = snap.data();
+
+      const stock = Number(p.stock || 0);
+      const qty = Number(it.quantity || 0);
+      if (qty <= 0) throw new Error('Invalid quantity for ' + it.productId);
+      if (stock < qty) throw new Error(`Insufficient stock for ${p.name || it.productId}`);
+
+      snapshotItems.push({
+        productId: productRefs[i].id,
+        name: String(p.name || ''),
+        priceAtOrder: Number(p.price || 0),
+        quantity: qty,
+        imageUrl: p.imageUrl || null
+      });
     }
+
+    // ----- WRITES (must be after reads; no new reads below)
+    // 1) decrement stock / increment sold
+    for (let i = 0; i < normalized.length; i++) {
+      const qty = normalized[i].quantity;
+      tx.update(productRefs[i], {
+        stock: increment(-qty),
+        sold: increment(qty)
+      });
+    }
+
+    // 2) create order
     const orderRef = doc(collection(db, 'orders'));
-    tx.set(orderRef, { customerId, pharmacyId, items, total, status: 'placed', createdAt: serverTimestamp() });
-    const cartSnap = await getDocs(collection(db, 'users', customerId, 'cart'));
-    cartSnap.forEach(c => tx.delete(c.ref));
-    return { id: orderRef.id };
+    tx.set(orderRef, {
+      customerId,
+      pharmacyId,
+      items: snapshotItems,
+      total: Number(total || 0),
+      status: 'placed',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+
+    return { orderId: orderRef.id };
   });
+
+  // AFTER the transaction: clear cart in a separate batch (no reads after writes in tx)
+  try {
+    const cartCol = collection(db, 'users', customerId, 'cart');
+    const cartSnap = await getDocs(cartCol);
+    if (!cartSnap.empty) {
+      const batch = writeBatch(db);
+      cartSnap.forEach(docSnap => batch.delete(docSnap.ref));
+      await batch.commit();
+    }
+  } catch (e) {
+    // Non-fatal: order is placed; cart clear failed. You can toast a warning or retry.
+    console.warn('Cart clear failed after order placement:', e);
+  }
+
+  return result; // { orderId }
 };
 
 export const listenOrders = (uid, cb) => {

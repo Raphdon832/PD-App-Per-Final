@@ -11,6 +11,7 @@ service cloud.firestore {
       return /databases/$(database)/documents/users/$(request.auth.uid);
     }
 
+    // Returns role string or null if user doc missing
     function userRole() {
       return (signedIn() && exists(userDocPath()))
         ? get(userDocPath()).data.role
@@ -32,12 +33,15 @@ service cloud.firestore {
       allow write: if owner(userId) || pharmacyOrAdmin();
 
       match /cart/{cartItemId} {
-        allow read, list: if owner(userId);
+        // You can also just use "read", but showing explicit verbs is fine:
+        allow get, list: if owner(userId);
+
         allow create: if owner(userId)
           && request.resource.data.productId is string
           && request.resource.data.qty is number
           && request.resource.data.qty > 0;
 
+        // Only qty can change; productId stays the same
         allow update: if owner(userId)
           && request.resource.data.productId == resource.data.productId
           && request.resource.data.qty is number
@@ -56,14 +60,14 @@ service cloud.firestore {
 
       allow update: if pharmacyOrAdmin()
         && pharmacyId == request.auth.uid
-        && request.resource.data.id == resource.data.id;
+        && request.resource.data.id == resource.data.id; // id immutable
 
       allow delete: if userRole() == 'admin' || userRole() == 'superuser';
     }
 
     /* ---------- products ---------- */
     match /products/{productId} {
-      allow read, list: if true;
+      allow get, list: if true;
 
       allow create: if pharmacyOrAdmin()
         && request.resource.data.pharmacyId == request.auth.uid
@@ -73,6 +77,7 @@ service cloud.firestore {
         && request.resource.data.stock is number
         && request.resource.data.stock >= 0;
 
+      // pharmacyId immutable; keep number fields valid
       allow update: if pharmacyOrAdmin()
         && resource.data.pharmacyId == request.auth.uid
         && request.resource.data.pharmacyId == resource.data.pharmacyId
@@ -85,12 +90,16 @@ service cloud.firestore {
 
     /* ---------- orders ---------- */
     match /orders/{orderId} {
-      allow read: if signedIn() && (
+      // Customer who placed it, pharmacy fulfilling it, or admins can read
+      allow get, list: if signedIn() && (
         resource.data.customerId == request.auth.uid ||
         resource.data.pharmacyId == request.auth.uid ||
         userRole() == 'admin' || userRole() == 'superuser'
       );
 
+      // NOTE: Firestore rules don't have `.every()`, so we keep create validation simple.
+      // If you need per-item validation (e.g., every item has quantity > 0),
+      // enforce it in your server/client code.
       allow create: if signedIn()
         && request.resource.data.customerId == request.auth.uid
         && request.resource.data.pharmacyId is string
@@ -100,16 +109,16 @@ service cloud.firestore {
         && request.resource.data.items.size() > 0
         && request.resource.data.status == 'placed';
 
-      // pharmacy/admin can only change 'status' (+ optional 'updatedAt')
-      // customer can do no-op updates only
+      // Pharmacy/admin can only change allowed fields; customer can do no-op only.
       allow update: if signedIn() && (
         (
           (resource.data.pharmacyId == request.auth.uid || userRole() == 'admin' || userRole() == 'superuser')
-          && request.resource.data.customerId == resource.data.customerId
-          && request.resource.data.pharmacyId == resource.data.pharmacyId
-          && request.resource.data.items == resource.data.items
-          && request.resource.data.total == resource.data.total
+          // Only these fields may CHANGE (others may be included but must not change)
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly(['status','updatedAt','stockProcessed'])
+          // Valid statuses
           && request.resource.data.status in ['placed','processing','shipped','completed','cancelled']
+          // stockProcessed, if present, must be true
+          && (!('stockProcessed' in request.resource.data) || request.resource.data.stockProcessed == true)
         )
         ||
         (
