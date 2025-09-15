@@ -12,7 +12,6 @@ export default function AuthPage() {
   const [displayName, setDisplayName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
-  const [isPharmacy, setIsPharmacy] = useState(false);
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
 
@@ -24,7 +23,7 @@ export default function AuthPage() {
         await signIn(email, password);
         navigate('/');
       } else {
-        await signUp({ email, password, displayName, phone, address: isPharmacy ? address : undefined, role: isPharmacy ? 'pharmacy' : 'customer' });
+        await signUp({ email, password, displayName, phone, address });
         navigate('/');
       }
     } catch (e) {
@@ -38,34 +37,19 @@ export default function AuthPage() {
     <div className="min-h-screen grid place-items-center px-5">
       <form onSubmit={submit} className="w-full max-w-sm rounded-3xl border border-zinc-200 p-6">
         <div className="text-2xl font-semibold mb-2 text-brand-primary">{mode==='signin'?'Welcome back':'Create your account'}</div>
-        <div className="text-zinc-500 mb-4">Sign in to {mode==='signin' ? 'your pharmacy account' : 'get started with us'}.</div>
+        <div className="text-zinc-500 mb-4">Sign in to {mode==='signin' ? 'your account' : 'get started with us'}.</div>
 
         {mode==='signup' && (
           <>
             <Input placeholder="Full name" value={displayName} onChange={(e)=>setDisplayName(e.target.value)} className="mb-3" />
             <Input placeholder="Phone Number" value={phone} onChange={(e)=>setPhone(e.target.value)} className="mb-3" />
-            {isPharmacy && (
-              <Input placeholder="Pharmacy Address" value={address} onChange={e=>setAddress(e.target.value)} className="mb-3" />
-            )}
+            <Input placeholder="Address" value={address} onChange={e=>setAddress(e.target.value)} className="mb-3" />
           </>
         )}
         <Input type="email" placeholder="Email" value={email} onChange={(e)=>setEmail(e.target.value)} className="mb-3" />
         <Input type="password" placeholder="Password" value={password} onChange={(e)=>setPassword(e.target.value)} className="mb-4" />
 
         <Button disabled={busy} className="w-full bg-brand-primary text-white hover:bg-brand-primary/90 rounded-[7px]">{busy?'Please wait…':(mode==='signin'?'Sign in':'Sign up')}</Button>
-        {mode==='signup' && (
-          <div className="flex justify-center mt-3 mb-1">
-            <label className="flex items-center text-sm">
-              <input
-                type="checkbox"
-                checked={isPharmacy}
-                onChange={e => setIsPharmacy(e.target.checked)}
-                className="mr-2 accent-brand-primary"
-              />
-              I'm a pharmacy
-            </label>
-          </div>
-        )}
         <div className="mt-4 text-sm text-center">
           {mode==='signin'? (
             <>No account? <button type="button" className="text-brand-accent" onClick={()=>setMode('signup')}>Create one</button></>

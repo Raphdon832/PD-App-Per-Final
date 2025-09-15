@@ -2,133 +2,53 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /* ---------- Helpers ---------- */
     function signedIn() {
       return request.auth != null;
-    }
-
-    function userDocPath() {
-      return /databases/$(database)/documents/users/$(request.auth.uid);
-    }
-
-    // Returns role string or null if user doc missing
-    function userRole() {
-      return (signedIn() && exists(userDocPath()))
-        ? get(userDocPath()).data.role
-        : null;
     }
 
     function owner(uid) {
       return signedIn() && request.auth.uid == uid;
     }
 
-    function pharmacyOrAdmin() {
-      let r = userRole();
-      return r == 'pharmacy' || r == 'admin' || r == 'superuser';
-    }
-
-    /* ---------- users + cart ---------- */
+    // USERS: Users can read and update their own phone/address
     match /users/{userId} {
-      allow read: if signedIn();
+      allow read: if owner(userId);
       allow update: if owner(userId) && (
-        // Only allow updating phone and address fields
         request.resource.data.diff(resource.data).changedKeys().hasOnly(['phone', 'address'])
       );
-      allow write: if owner(userId) || pharmacyOrAdmin();
+      allow write: if owner(userId);
 
+      // Allow user to manage their own cart
       match /cart/{cartItemId} {
-        // You can also just use "read", but showing explicit verbs is fine:
-        allow get, list: if owner(userId);
-
-        allow create: if owner(userId)
-          && request.resource.data.productId is string
-          && request.resource.data.qty is number
-          && request.resource.data.qty > 0;
-
-        // Only qty can change; productId stays the same
-        allow update: if owner(userId)
-          && request.resource.data.productId == resource.data.productId
-          && request.resource.data.qty is number
-          && request.resource.data.qty > 0;
-
-        allow delete: if owner(userId);
+        allow read, write: if owner(userId);
       }
     }
 
-    /* ---------- pharmacies ---------- */
+    // PHARMACY: Any pharmacy user or admin can update pharmacy doc
     match /pharmacies/{pharmacyId} {
       allow read: if true;
-      allow update: if pharmacyOrAdmin() && pharmacyId == request.auth.uid && request.resource.data.id == resource.data.id
-        || (request.auth != null && request.auth.uid == pharmacyId && request.resource.data.diff(resource.data).changedKeys().hasOnly(['phone', 'address']));
-      allow create: if pharmacyOrAdmin() && request.resource.data.id == request.auth.uid;
-      allow delete: if userRole() == 'admin' || userRole() == 'superuser';
+      allow update, create, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'pharmacy' || request.auth.uid == 'rxkne6oJn1ZOZhGCNkyNABUg05n2';
     }
 
-    /* ---------- products ---------- */
+    // PRODUCTS: Any pharmacy user or admin can create/update/delete; anyone can read
     match /products/{productId} {
       allow get, list: if true;
-
-      allow create: if pharmacyOrAdmin()
-        && request.resource.data.pharmacyId == request.auth.uid
-        && request.resource.data.name is string
-        && request.resource.data.price is number
-        && request.resource.data.price >= 0
-        && request.resource.data.stock is number
-        && request.resource.data.stock >= 0;
-
-      // pharmacyId immutable; keep number fields valid
-      allow update: if pharmacyOrAdmin()
-        && resource.data.pharmacyId == request.auth.uid
-        && request.resource.data.pharmacyId == resource.data.pharmacyId
-        && (!('price' in request.resource.data) || (request.resource.data.price is number && request.resource.data.price >= 0))
-        && (!('stock' in request.resource.data) || (request.resource.data.stock is number && request.resource.data.stock >= 0));
-
-      allow delete: if pharmacyOrAdmin()
-        && resource.data.pharmacyId == request.auth.uid;
+      allow create, update, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'pharmacy' || request.auth.uid == 'rxkne6oJn1ZOZhGCNkyNABUg05n2';
     }
 
-    /* ---------- orders ---------- */
+    // ORDERS: Customers can create/read their own; any pharmacy user or admin can read/update all
     match /orders/{orderId} {
-      // Customer who placed it, pharmacy fulfilling it, or admins can read
       allow get, list: if signedIn() && (
-        resource.data.customerId == request.auth.uid ||
-        resource.data.pharmacyId == request.auth.uid ||
-        userRole() == 'admin' || userRole() == 'superuser'
+        resource.data.customerId == request.auth.uid || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'pharmacy' || request.auth.uid == 'rxkne6oJn1ZOZhGCNkyNABUg05n2'
       );
-
-      // NOTE: Firestore rules don't have `.every()`, so we keep create validation simple.
-      // If you need per-item validation (e.g., every item has quantity > 0),
-      // enforce it in your server/client code.
-      allow create: if signedIn()
-        && request.resource.data.customerId == request.auth.uid
-        && request.resource.data.pharmacyId is string
-        && request.resource.data.total is number
-        && request.resource.data.total >= 0
-        && request.resource.data.items is list
-        && request.resource.data.items.size() > 0
-        && request.resource.data.status == 'placed';
-
-      // Pharmacy/admin can only change allowed fields; customer can do no-op only.
-      allow update: if signedIn() && (
-        (
-          (resource.data.pharmacyId == request.auth.uid || userRole() == 'admin' || userRole() == 'superuser')
-          // Only these fields may CHANGE (others may be included but must not change)
-          && request.resource.data.diff(resource.data).changedKeys().hasOnly(['status','updatedAt','stockProcessed'])
-          // Valid statuses
-          && request.resource.data.status in ['placed','processing','shipped','completed','cancelled']
-          // stockProcessed, if present, must be true
-          && (!('stockProcessed' in request.resource.data) || request.resource.data.stockProcessed == true)
-        )
-        ||
-        (
-          resource.data.customerId == request.auth.uid
-          && request.resource.data == resource.data
-        )
-      );
-
-      allow delete: if userRole() == 'admin' || userRole() == 'superuser';
+      allow create: if signedIn() && request.resource.data.customerId == request.auth.uid;
+      allow update, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'pharmacy' || request.auth.uid == 'rxkne6oJn1ZOZhGCNkyNABUg05n2';
     }
 
-    // Chat thread and message rules removed: migrated to WhatsApp-based messaging.
+    // CONFIG: Allow all users to read config, only admin can write
+    match /config/{docId} {
+      allow read: if true;
+      allow write: if request.auth.uid == 'rxkne6oJn1ZOZhGCNkyNABUg05n2';
+    }
   }
 }

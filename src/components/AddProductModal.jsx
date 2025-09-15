@@ -4,11 +4,11 @@ import { useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
-import { addProduct } from '@/lib/db';
+import { addProduct, getPharmacyId } from '@/lib/db';
 import { storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
-export default function AddProductModal({ pharmacyId, onClose }) {
+export default function AddProductModal({ onClose }) {
   const [form, setForm] = useState({ name: '', price: '', category: 'Over‑the‑Counter', stock: 0, sku: '', image: '', description: '' });
   const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -18,6 +18,7 @@ export default function AddProductModal({ pharmacyId, onClose }) {
     setBusy(true);
     try {
       let imageUrl = form.image;
+      const pharmacyId = await getPharmacyId();
       if (!imageUrl && file) {
         const key = `products/${pharmacyId}/${Date.now()}_${file.name}`;
         const storageRef = ref(storage, key);
@@ -26,7 +27,7 @@ export default function AddProductModal({ pharmacyId, onClose }) {
       }
       // Parse tags into array
       const tagsArr = (form.tags||'').split(',').map(t=>t.trim()).filter(Boolean);
-      const productData = { ...form, image: imageUrl, price: Number(form.price), pharmacyId, tags: tagsArr };
+      const productData = { ...form, image: imageUrl, price: Number(form.price), tags: tagsArr };
       console.log('Submitting product:', productData); // Debug log
       await addProduct(productData);
       onClose();

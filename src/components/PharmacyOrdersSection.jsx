@@ -1,23 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { processOrderAndReserveStock, updateOrderStatus } from '@/lib/orders';
-import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { getPharmacyId } from '@/lib/db';
 
 const STATUS_OPTIONS = ['fulfilled', 'processing', 'cancelled'];
 
-export default function PharmacyOrdersSection({ pharmacyId }) {
+export default function PharmacyOrdersSection() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     async function fetchOrders() {
-      if (!pharmacyId) return;
       setLoading(true);
-      const q = query(collection(db, 'orders'), where('pharmacyId', '==', pharmacyId));
+      const pharmacyId = await getPharmacyId();
+      const q = query(collection(db, 'orders'));
       const snap = await getDocs(q);
+      // Only show orders for this pharmacy (if you still store pharmacyId on order)
       const ordersData = await Promise.all(snap.docs.map(async d => {
         const data = d.data();
-        // Ensure all items are shown
+        // If you want to filter by pharmacyId, uncomment below:
+        // if (data.pharmacyId && data.pharmacyId !== pharmacyId) return null;
         const items = Array.isArray(data.items) ? data.items : [];
         return {
           id: d.id,
@@ -25,11 +28,11 @@ export default function PharmacyOrdersSection({ pharmacyId }) {
           items,
         };
       }));
-      setOrders(ordersData);
+      setOrders(ordersData.filter(Boolean));
       setLoading(false);
     }
     fetchOrders();
-  }, [pharmacyId]);
+  }, []);
 
   async function onChangeStatus(order, value) {
     try {
@@ -39,8 +42,6 @@ export default function PharmacyOrdersSection({ pharmacyId }) {
       } else {
         await updateOrderStatus(order.id, next);     // simple status change
       }
-      // Optionally refresh UI here
-      // await fetchOrders();
     } catch (e) {
       console.error('Status change failed:', e);
       alert(e.message || 'Failed to change status');
