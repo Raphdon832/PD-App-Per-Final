@@ -75,6 +75,15 @@ export default function Orders() {
     return Object.values(map);
   }
 
+  // Sort orders by createdAt descending (for customer view)
+  const sortedOrders = [...filteredOrders].sort((a, b) => {
+    const aTime = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
+    const bTime = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+    return bTime - aTime;
+  });
+  const [showAll, setShowAll] = useState(false);
+  const visibleOrders = showAll ? sortedOrders : sortedOrders.slice(0, 3);
+
   if (!user) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-white">
@@ -96,8 +105,16 @@ export default function Orders() {
   return (
     <div className="pt-10 pb-28 w-full max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto px-4 sm:px-5 md:px-8 lg:px-12 xl:px-0 min-h-screen flex flex-col">
       {/* Sticky header */}
-      <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md pb-2 pt-4 -mx-4 sm:-mx-5 md:-mx-8 lg:-mx-12 xl:-mx-0 px-4 sm:px-5 md:px-8 lg:px-12 xl:px-0">
+      <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md pb-2 pt-4 -mx-4 sm:-mx-5 md:-mx-8 lg:-mx-12 xl:-mx-0 px-4 sm:px-5 md:px-8 lg:px-12 xl:px-0 flex items-center justify-between">
         <div className="text-[28px] sm:text-[35px] md:text-[42px] lg:text-[48px] font-light font-poppins">Orders</div>
+        {sortedOrders.length > 3 && (
+          <button
+            className="text-xs text-brand-primary underline"
+            onClick={() => setShowAll(a => !a)}
+          >
+            {showAll ? 'See less' : 'See more'}
+          </button>
+        )}
       </div>
       {/* Filters */}
       <div className="mt-4 flex gap-2 flex-wrap">
@@ -114,10 +131,10 @@ export default function Orders() {
         ))}
       </div>
       <div className="mt-6 space-y-4">
-        {filteredOrders.length === 0 ? (
+        {visibleOrders.length === 0 ? (
           <div className="text-zinc-500 font-extralight text-[13px] sm:text-[14px] md:text-[16px] lg:text-[18px]">No orders yet.</div>
         ) : (
-          filteredOrders.map(o => {
+          visibleOrders.map(o => {
             const items = o.items || [];
             const isExpanded = expandedOrders[o.id];
             const showSeeMore = items.length > 4;

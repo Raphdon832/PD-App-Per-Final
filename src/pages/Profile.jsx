@@ -25,6 +25,14 @@ export default function Profile() {
     return () => unsub();
   }, [user]);
 
+  // Sort orders by createdAt descending
+  const sortedOrders = [...orders].sort((a, b) => {
+    const aTime = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0);
+    const bTime = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0);
+    return bTime - aTime;
+  });
+  const visibleOrders = showAllOrders ? sortedOrders : sortedOrders.slice(0, 3);
+
   if (!user) {
     return (
       <div className="p-6">
@@ -55,21 +63,27 @@ export default function Profile() {
 
         {/* Orders Section */}
         <div className="rounded-3xl bg-white shadow px-6 py-6 border border-brand-accent/10">
-          <div className="flex items-center gap-2 mb-4">
-            <Package className="h-5 w-5 text-brand-accent" />
-            <div className="text-lg font-semibold text-brand-accent">Your Orders <span className="ml-1 text-xs font-normal text-brand-primary/70">({orders.length})</span></div>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Package className="h-5 w-5 text-brand-accent" />
+              <div className="text-lg font-semibold text-brand-accent">Your Orders <span className="ml-1 text-xs font-normal text-brand-primary/70">({orders.length})</span></div>
+            </div>
+            {sortedOrders.length > 3 && (
+              <button className="text-xs text-brand-primary underline" onClick={() => setShowAllOrders(a => !a)}>
+                {showAllOrders ? 'See less' : 'See more'}
+              </button>
+            )}
           </div>
-          
           <div className="space-y-4">
-            {orders.length === 0 && (
+            {visibleOrders.length === 0 && (
               <div className="text-sm text-zinc-400 text-center">No orders yet.</div>
             )}
-            {(showAllOrders ? orders : orders.slice(0,2)).map(order => (
+            {visibleOrders.map(order => (
               <div key={order.id} className="rounded-xl border border-brand-primary/10 bg-brand-primary/5 px-4 py-3 flex flex-col gap-1">
                 <div className="flex items-center justify-between">
                   <div className="text-sm font-semibold text-brand-primary">Order #{order.id.slice(0,8)}</div>
                   <div className="text-xs text-zinc-500">
-                    {order.createdAt ? new Date(order.createdAt.seconds*1000).toLocaleString() : ''}
+                    {order.createdAt ? (order.createdAt.toDate ? order.createdAt.toDate().toLocaleString() : new Date(order.createdAt.seconds*1000).toLocaleString()) : ''}
                   </div>
                 </div>
                 <ul className="mt-2 space-y-1">
@@ -85,16 +99,6 @@ export default function Profile() {
                 </div>
               </div>
             ))}
-            {orders.length > 2 && !showAllOrders && (
-              <button className="text-brand-primary text-sm mt-2" onClick={() => setShowAllOrders(true)}>
-                See more
-              </button>
-            )}
-            {orders.length > 2 && showAllOrders && (
-              <button className="text-brand-primary text-sm mt-2" onClick={() => setShowAllOrders(false)}>
-                See less
-              </button>
-            )}
           </div>
         </div>
         
