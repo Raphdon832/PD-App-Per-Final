@@ -181,8 +181,8 @@ export default function Dashboard() {
       />
       {/* New Order Modal */}
       {newOrderModalOpen && newOrderData && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+        <div className="fixed inset-0 flex items-center justify-center bg-black/40" style={{ zIndex: 9999 }}>
+          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4 shadow-xl" role="dialog" aria-modal="true">
             <h3 className="text-lg font-bold text-green-700 mb-2">New Order Received</h3>
             <div className="text-sm text-zinc-700 mb-3">Order ID: <span className="font-mono text-xs">{newOrderData.id}</span></div>
             <div className="mb-3">
@@ -207,6 +207,9 @@ export default function Dashboard() {
       </header>
       <main className="flex-1 px-3 sm:px-4 py-8 flex flex-col items-center justify-start relative w-full">
         <div className="w-full max-w-md flex flex-col gap-6">
+
+
+          
           {/* Stats Card */}
           <div className="bg-white rounded-2xl border border-green-200 shadow p-6 flex flex-col gap-4">
             <div className="flex items-center gap-4">
@@ -222,7 +225,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Floating Edit WhatsApp Button */}
+      
         
 
           {/* Add Products Section */}

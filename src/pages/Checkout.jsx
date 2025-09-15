@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
-import { placeOrder, listenCart, removeFromCart } from '@/lib/db';
+import { placeOrder, listenCart, removeFromCart, getPharmacyId } from '@/lib/db';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
@@ -64,9 +64,19 @@ export default function Checkout() {
       if (profile?.address !== address || profile?.phone !== phone) {
         await updateDoc(doc(db, 'users', user.uid), { address, phone });
       }
+      // Try to resolve the single pharmacy id so orders are tagged correctly
+      let pharmacyId;
+      try {
+        pharmacyId = await getPharmacyId();
+      } catch (err) {
+        console.warn('Could not resolve pharmacyId while placing order:', err);
+        pharmacyId = undefined; // fallback: still place order but dashboard won't pick it up until fixed
+      }
+
       const items = cart.map(item => ({ productId: item.id, quantity: item.qty || 1 }));
       const result = await placeOrder({
         customerId: user.uid,
+        pharmacyId,
         items,
         total,
         paymentMethod,
