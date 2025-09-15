@@ -183,7 +183,7 @@ export default function Dashboard() {
       {newOrderModalOpen && newOrderData && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/40" style={{ zIndex: 9999 }}>
           <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4 shadow-xl" role="dialog" aria-modal="true">
-            <h3 className="text-lg font-bold text-green-700 mb-2">New Order Received</h3>
+            <h3 className="text-lg font-bold text-brand-primary mb-2">New Order Received</h3>
             <div className="text-sm text-zinc-700 mb-3">Order ID: <span className="font-mono text-xs">{newOrderData.id}</span></div>
             <div className="mb-3">
               <div className="font-semibold">Items</div>
@@ -197,30 +197,31 @@ export default function Dashboard() {
             <div className="text-sm mb-4"><b>Phone:</b> {newOrderData.phone || newOrderData.customerPhone || '-'}</div>
             <div className="flex gap-2 justify-end">
               <button className="px-4 py-2 text-sm rounded bg-zinc-200" onClick={() => { setNewOrderModalOpen(false); setNewOrderData(null); }}>Close</button>
-              <button className="px-4 py-2 text-sm rounded bg-green-600 text-white" onClick={() => { setNewOrderModalOpen(false); /* optionally navigate to orders */ }}>View Orders</button>
+              <button className="px-4 py-2 text-sm rounded bg-brand-primary text-brand-accent" onClick={() => { setNewOrderModalOpen(false); /* optionally navigate to orders */ }}>View Orders</button>
             </div>
           </div>
         </div>
       )}
       <header className="sticky top-0 z-20 bg-white/90 backdrop-blur-md pb-2 pt-4 -mx-auto sm:-mx-5 md:-mx-8 lg:-mx-12 xl:-mx-0 px-4 sm:px-5 md:px-8 lg:px-12 xl:px-0">
-        <h1 className="text-[28px] font-bold text-green-700 leading-none tracking-tight">Pharmacy Dashboard</h1>
+        <h1 className="text-[28px] font-bold text-brand-primary leading-none tracking-tight">Pharmacy Dashboard</h1>
       </header>
       <main className="flex-1 px-3 sm:px-4 py-8 flex flex-col items-center justify-start relative w-full">
         <div className="w-full max-w-md flex flex-col gap-6">
 
 
           
+          
           {/* Stats Card */}
-          <div className="bg-white rounded-2xl border border-green-200 shadow p-6 flex flex-col gap-4">
+          <div className="bg-white rounded-2xl border border-brand-primary/20 shadow p-6 flex flex-col gap-4">
             <div className="flex items-center gap-4">
               <div className="flex-1 flex flex-col items-center">
                 <span className="text-xs text-zinc-500 mb-1">Total Products</span>
-                <span className="text-2xl font-bold text-green-600">{totalProducts}</span>
+                <span className="text-2xl font-bold text-brand-primary">{totalProducts}</span>
               </div>
               <div className="w-px h-10 bg-zinc-200" />
               <div className="flex-1 flex flex-col items-center">
                 <span className="text-xs text-zinc-500 mb-1">Total Orders</span>
-                <span className="text-2xl font-bold text-orange-500">{totalOrders}</span>
+                <span className="text-2xl font-bold text-brand-primary">{totalOrders}</span>
               </div>
             </div>
           </div>
@@ -231,13 +232,13 @@ export default function Dashboard() {
           {/* Add Products Section */}
           <div className="flex gap-2 w-full">
             <button
-              className="flex-1 rounded-[5px] bg-green-600 text-white text-[13px] font-semibold py-2 shadow hover:bg-green-700 transition"
+              className="flex-1 rounded-[5px] bg-brand-primary text-brand-accent text-[13px] font-semibold py-2 shadow hover:bg-brand-primary/90 transition"
               onClick={() => setShowAdd(true)}
             >
               + Add Product
             </button>
             <button
-              className="flex-1 rounded-[5px] border border-orange-500 text-orange-600 text-[13px] font-semibold py-2 hover:bg-orange-50 transition"
+              className="flex-1 rounded-[5px] border border-brand-primary text-brand-primary text-[13px] font-semibold py-2 hover:bg-brand-primary/10 transition"
               onClick={() => setShowBulk(true)}
             >
               Bulk Upload
@@ -247,7 +248,7 @@ export default function Dashboard() {
           {showBulk && <BulkUploadModal pharmacyId={profile?.uid} onClose={() => setShowBulk(false)} />}
           {/* Inventory Section */}
           <div className="mt-6">
-            <h2 className="text-lg font-semibold text-green-700 mb-2">Inventory</h2>
+            <h2 className="text-lg font-semibold text-brand-primary mb-2">Inventory</h2>
             <div className="flex flex-col gap-3">
               {(showAll ? products : products.slice(0, 3)).map(product => (
                 <div key={product.id} className="bg-white border border-zinc-200 rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:shadow transition overflow-hidden" onClick={() => handleEdit(product)}>
@@ -266,7 +267,7 @@ export default function Dashboard() {
                       }}
                     />
                   ) : (
-                    <div className="w-16 h-16 flex items-center justify-center bg-green-50 text-green-700 rounded-lg border font-semibold text-lg flex-shrink-0">
+                    <div className="w-16 h-16 flex items-center justify-center bg-brand-primary/5 text-brand-primary rounded-lg border font-semibold text-lg flex-shrink-0">
                       {product.name ? product.name.toString().trim().charAt(0).toUpperCase() : '?'}
                     </div>
                   )}
@@ -275,19 +276,19 @@ export default function Dashboard() {
                     <div className="text-xs text-zinc-500 truncate">SKU: {product.sku || '-'}</div>
                     <div className="text-xs text-zinc-500">Stock: {product.stock ?? '-'}</div>
                   </div>
-                  <div className="text-orange-600 font-bold text-[13px] flex-shrink-0 ml-2">₦{Number(product.price).toLocaleString()}</div>
+                  <div className="text-brand-primary font-bold text-[13px] flex-shrink-0 ml-2">₦{Number(product.price).toLocaleString()}</div>
                 </div>
               ))}
             </div>
             {products.length > 3 && (
-              <button className="mt-3 text-[13px] text-green-700 font-semibold hover:underline" onClick={() => setShowAll(v => !v)}>
+              <button className="mt-3 text-[13px] text-brand-primary font-semibold hover:underline" onClick={() => setShowAll(v => !v)}>
                 {showAll ? 'See less' : 'See more'}
               </button>
             )}
           </div>
           {products.length > 0 && (
             <button
-              className="mt-4 w-full rounded-[5px] bg-orange-500 text-white text-[13px] font-semibold py-2 shadow hover:bg-orange-600 transition"
+              className="mt-4 w-full rounded-[5px] bg-brand-primary text-brand-accent text-[13px] font-semibold py-2 shadow hover:bg-brand-primary/90 transition"
               onClick={() => {
                 const headers = ['S/N', 'Name', 'Price', 'Description', 'Image', 'Category', 'Stock', 'SKU'];
                 const rows = products.map((p, i) => [
@@ -328,7 +329,7 @@ export default function Dashboard() {
         
         {/* Floating Search Button */}
         <button
-          className="fixed bottom-40 right-8 z-50 bg-white border border-green-500 text-green-600 rounded-full shadow-lg w-12 h-12 flex items-center justify-center text-2xl font-bold leading-none hover:bg-green-50 transition"
+          className="fixed bottom-40 right-8 z-50 bg-white border border-brand-primary text-brand-primary rounded-full shadow-lg w-12 h-12 flex items-center justify-center text-2xl font-bold leading-none hover:bg-brand-primary/10 transition"
           aria-label="Search"
           onClick={() => setShowSearch(true)}
         >
@@ -336,7 +337,7 @@ export default function Dashboard() {
         </button>
         {/* Floating Add Product Button */}
         <button
-          className="fixed bottom-24 right-8 z-50 bg-green-500 text-white rounded-full shadow-lg w-12 h-12 flex items-center justify-center text-3xl font-bold leading-none hover:bg-green-600 transition disabled:opacity-0 disabled:cursor-not-allowed"
+          className="fixed bottom-24 right-8 z-50 bg-brand-primary text-brand-accent rounded-full shadow-lg w-12 h-12 flex items-center justify-center text-3xl font-bold leading-none hover:bg-brand-primary/90 transition disabled:opacity-0 disabled:cursor-not-allowed"
           aria-label="Add Product"
           onClick={() => setShowAdd(true)}
           disabled={showAdd}

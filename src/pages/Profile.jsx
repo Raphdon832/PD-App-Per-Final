@@ -108,8 +108,8 @@ export default function Profile() {
           <div className="rounded-3xl bg-white shadow px-6 py-6 border border-brand-accent/10">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <Package className="h-5 w-5 text-brand-accent" />
-                <div className="text-lg font-semibold text-brand-accent">Your Orders <span className="ml-1 text-xs font-normal text-brand-primary/70">({orders.length})</span></div>
+                <Package className="h-5 w-5 text-brand-primary" />
+                <div className="text-lg font-semibold text-brand-primary">Your Orders <span className="ml-1 text-xs font-normal text-brand-primary/70">({orders.length})</span></div>
               </div>
               {sortedOrders.length > 3 && (
                 <button className="text-xs text-brand-primary underline" onClick={() => setShowAllOrders(a => !a)}>
@@ -137,7 +137,7 @@ export default function Profile() {
                       <li className="text-[12px] opacity-70">+{order.items.length - 3} more…</li>
                     )}
                   </ul>
-                  <div className="mt-1 text-xs font-medium text-brand-accent">
+                  <div className="mt-1 text-xs font-medium text-brand-primary">
                     {order.status ? order.status : 'Processing'}
                   </div>
                   <div className="mt-1 text-xs">

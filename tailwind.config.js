@@ -5,10 +5,10 @@ export default {
     extend: {
       colors: {
         brand: {
-          primary: '#10B981',   // emerald-500
-          primaryDark: '#059669',
-          accent: '#F59E0B',    // amber-500 (orange vibe)
-          accentDark: '#D97706',
+          primary: '#000000',   // black (primary)
+          primaryDark: '#111111',
+          accent: '#FFFFFF',    // white (secondary)
+          accentDark: '#F3F3F3',
         },
       },
       fontFamily: {

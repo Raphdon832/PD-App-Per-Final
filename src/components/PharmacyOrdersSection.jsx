@@ -154,7 +154,7 @@ export default function PharmacyOrdersSection() {
   return (
     <div className="mt-10">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-bold text-green-700">Orders</h2>
+        <h2 className="text-lg font-bold text-black">Orders</h2>
         {orders.length > 3 && (
           <button
             className="text-xs text-brand-primary underline"
