@@ -41,15 +41,15 @@ const handleSelectSuggestion = (s) => {
 
 
 const submit = async (e)=>{
-e.preventDefault();
-setBusy(true);
-try{
-if (!form.address) throw new Error('Address is required');
-const result = await signUp({ email: form.email, password: form.password, displayName: form.name, role: 'customer', address: form.address, lat: selectedAddress?.lat, lon: selectedAddress?.lon });
-setSuccess(form.email);
-}catch(err){
-alert(err.message);
-}finally{ setBusy(false); }
+  e.preventDefault();
+  setBusy(true);
+  try{
+    if (!form.address) throw new Error('Address is required');
+    const result = await signUp({ email: form.email, password: form.password, displayName: form.name, role: 'customer', address: form.address, lat: selectedAddress?.lat, lon: selectedAddress?.lon, phone: form.phone });
+    setSuccess(form.email);
+  }catch(err){
+    alert(err.message);
+  }finally{ setBusy(false); }
 }
 
 
@@ -63,7 +63,7 @@ return (
     <form onSubmit={submit} className="mt-8 w-full max-w-md md:max-w-xl lg:max-w-2xl mx-auto font-poppins">
       <input className="w-full mb-4 px-4 py-2 border-b border-zinc-300 bg-transparent font-thin text-[13px] sm:text-[14px] md:text-[16px] lg:text-[18px] font-poppins placeholder:text-left focus:outline-none focus:border-[#36A5FF]" placeholder="Full Name" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} />
       <input type="email" className="w-full mb-4 px-4 py-2 border-b border-zinc-300 bg-transparent font-thin text-[13px] sm:text-[14px] md:text-[16px] lg:text-[18px] font-poppins placeholder:text-left focus:outline-none focus:border-[#36A5FF]" placeholder="Email Address" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} />
-      <input className="w-full mb-4 px-4 py-2 border-b border-zinc-300 bg-transparent font-thin text-[13px] sm:text-[14px] md:text-[16px] lg:text-[18px] font-poppins placeholder:text-left focus:outline-none focus:border-[#36A5FF]" placeholder="Phone Number" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} />
+      <input className="w-full mb-4 px-4 py-2 border-b border-zinc-300 bg-transparent font-thin text-[13px] sm:text-[14px] md:text-[16px] lg:text-[18px] font-poppins placeholder:text-left focus:outline-none focus:border-[#36A5FF]" placeholder="WhatsApp Number" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} />
       <div className="relative mb-4">
         <input
           className="w-full px-4 py-2 border-b border-zinc-300 bg-transparent font-thin text-[13px] sm:text-[14px] md:text-[16px] lg:text-[18px] font-poppins placeholder:text-left focus:outline-none focus:border-[#36A5FF]"

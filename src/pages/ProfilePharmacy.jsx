@@ -17,7 +17,6 @@ export default function ProfilePharmacy({ onSwitchToCustomer }) {
   const [showAdd, setShowAdd] = useState(false);
   const [showBulk, setShowBulk] = useState(false);
   const [productsSold, setProductsSold] = useState(0);
-  const [activeChats, setActiveChats] = useState(0);
   const [reviews, setReviews] = useState(0);
   const [editingProduct, setEditingProduct] = useState(null);
   const [editName, setEditName] = useState('');
@@ -45,10 +44,6 @@ export default function ProfilePharmacy({ onSwitchToCustomer }) {
         sold += (order.items || []).reduce((sum, item) => sum + (item.count || 1), 0);
       });
       setProductsSold(sold);
-    });
-    // Fetch active chats
-    getDocs(query(collection(db, 'threads'), where('pharmacyId', '==', user.uid))).then(snapshot => {
-      setActiveChats(snapshot.size);
     });
     // Fetch reviews
     getDocs(query(collection(db, 'reviews'), where('pharmacyId', '==', user.uid))).then(snapshot => {
@@ -178,10 +173,6 @@ export default function ProfilePharmacy({ onSwitchToCustomer }) {
         <div className="w-full flex items-center justify-between pb-2 border-b" style={{borderColor:'#9ED3FF', borderBottomWidth:'0.5px'}}>
           <span className="text-[12px] text-zinc-500 font-light">Products Sold</span>
           <span className="text-[12px] text-sky-600 font-medium">{productsSold}</span>
-        </div>
-        <div className="w-full flex items-center justify-between pb-2 border-b" style={{borderColor:'#9ED3FF', borderBottomWidth:'0.5px'}}>
-          <span className="text-[12px] text-zinc-500 font-light">Active Chats</span>
-          <span className="text-[12px] text-sky-600 font-medium">{activeChats}</span>
         </div>
         <div className="w-full flex items-center justify-between pb-2 border-b" style={{borderColor:'#9ED3FF', borderBottomWidth:'0.5px'}}>
           <span className="text-[12px] text-zinc-500 font-light">Reviews</span>

@@ -4,6 +4,7 @@ import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { User, Package } from 'lucide-react';
 import { ensureItemNames } from '@/lib/orders-view';
+import FloatingMessageButton from '@/components/FloatingMessageButton';
 
 export default function Profile() {
   const { user, logout } = useAuth();
@@ -58,6 +59,7 @@ export default function Profile() {
             <Package className="h-5 w-5 text-brand-accent" />
             <div className="text-lg font-semibold text-brand-accent">Your Orders <span className="ml-1 text-xs font-normal text-brand-primary/70">({orders.length})</span></div>
           </div>
+          
           <div className="space-y-4">
             {orders.length === 0 && (
               <div className="text-sm text-zinc-400 text-center">No orders yet.</div>
@@ -95,6 +97,7 @@ export default function Profile() {
             )}
           </div>
         </div>
+        
       </div>
     </div>
   );

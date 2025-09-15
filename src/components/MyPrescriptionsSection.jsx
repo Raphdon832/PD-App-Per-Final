@@ -148,7 +148,6 @@ export default function MyPrescriptionsSection() {
           <PrescriptionList
             prescriptions={visiblePrescriptions}
             userId={user.uid}
-            chatThreadId={null} // Not needed for this view
           />
           {total > 1 && !showAll && (
             <button

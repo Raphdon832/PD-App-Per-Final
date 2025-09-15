@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { getPrescriptionsForThread } from '@/lib/db';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-export default function PrescriptionList({ chatThreadId, prescriptions: propPrescriptions, userId }) {
+export default function PrescriptionList({ prescriptions: propPrescriptions, userId }) {
   const [prescriptions, setPrescriptions] = useState(propPrescriptions || []);
   // Track local quantity left for each prescription/drug: { [prescriptionId]: { [drugIdx]: qtyLeft } }
   const [qtyMap, setQtyMap] = useState({});
@@ -22,21 +21,7 @@ export default function PrescriptionList({ chatThreadId, prescriptions: propPres
       setQtyMap(map);
       return;
     }
-    if (chatThreadId) {
-      getPrescriptionsForThread(chatThreadId).then(data => {
-        setPrescriptions(data);
-        // Initialize qtyMap from prescription data
-        const map = {};
-        data.forEach(p => {
-          map[p.id] = {};
-          p.drugs.forEach((d, i) => {
-            map[p.id][i] = d.quantity;
-          });
-        });
-        setQtyMap(map);
-      });
-    }
-  }, [chatThreadId, propPrescriptions]);
+  }, [propPrescriptions]);
 
   // Helper to compute days left and quantity left for each drug
   function getDrugStatus(drug, prescription, idx) {

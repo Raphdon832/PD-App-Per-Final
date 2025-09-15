@@ -5,6 +5,7 @@ import BulkUploadModal from '@/components/BulkUploadModal';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import ProductEditModal from '@/components/ProductEditModal';
 import PharmacyOrdersSection from '@/components/PharmacyOrdersSection';
+import ProfileCompletionModal from '@/components/ProfileCompletionModal';
 import { collection, query, where, getDocs, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -19,6 +20,7 @@ export default function Dashboard() {
   const [showEdit, setShowEdit] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
   const [showAll, setShowAll] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   useEffect(() => {
     async function fetchStats() {
@@ -57,6 +59,12 @@ export default function Dashboard() {
     fetchStats();
   }, [profile]);
 
+  useEffect(() => {
+    if (profile && profile.role === 'pharmacy' && (!profile.phone || profile.phone === '' || !profile.address || profile.address === '')) {
+      setShowProfileModal(true);
+    }
+  }, [profile]);
+
   const handleEdit = (product) => {
     setEditProduct(product);
     setShowEdit(true);
@@ -72,6 +80,14 @@ export default function Dashboard() {
     if (!product.id) return;
     await deleteDoc(doc(db, 'products', product.id));
     setProducts((prods) => prods.filter(p => p.id !== product.id));
+  };
+
+  const handleProfileSave = async ({ phone, address }) => {
+    // Update Firestore user doc and pharmacy doc
+    await updateDoc(doc(db, 'users', profile.uid), { phone, address });
+    await updateDoc(doc(db, 'pharmacies', profile.uid), { phone, address });
+    setShowProfileModal(false);
+    window.location.reload();
   };
 
   if (loading) {
@@ -104,6 +120,14 @@ export default function Dashboard() {
 
   return (
     <div className="pt-10 pb-28 w-full max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto px-0 sm:px-5 md:px-8 lg:px-12 xl:px-0 min-h-screen flex flex-col">
+      <ProfileCompletionModal
+        open={showProfileModal}
+        onClose={() => {}}
+        onSave={handleProfileSave}
+        isPharmacy={true}
+        initialPhone={profile?.phone || ''}
+        initialAddress={profile?.address || ''}
+      />
       <header className="sticky top-0 z-20 bg-white/90 backdrop-blur-md pb-2 pt-4 -mx-auto sm:-mx-5 md:-mx-8 lg:-mx-12 xl:-mx-0 px-4 sm:px-5 md:px-8 lg:px-12 xl:px-0">
         <h1 className="text-[28px] font-bold text-green-700 leading-none tracking-tight">Pharmacy Dashboard</h1>
       </header>

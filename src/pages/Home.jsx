@@ -5,14 +5,40 @@ import { useAuth } from '@/lib/auth';
 import ProductCard from '@/components/ProductCard';
 import { useNavigate } from 'react-router-dom';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
+import FloatingMessageButton from '@/components/FloatingMessageButton';
+import ProfileCompletionModal from '@/components/ProfileCompletionModal';
+import { doc, updateDoc, getDocs, collection } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export default function Home() {
   const [products, setProducts] = useState([]);
   const [q, setQ] = useState('');
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [pharmacyPhone, setPharmacyPhone] = useState('');
 
-  useEffect(() => listenProducts(setProducts), []);
+  useEffect(() => {
+    listenProducts(setProducts);
+  }, []);
+
+  useEffect(() => {
+    if (user && profile && (!profile.phone || profile.phone === '')) {
+      setShowProfileModal(true);
+    }
+  }, [user, profile]);
+
+  useEffect(() => {
+    // Fetch the first pharmacy's WhatsApp number
+    async function fetchPharmacyPhone() {
+      const snap = await getDocs(collection(db, 'pharmacies'));
+      if (!snap.empty) {
+        const data = snap.docs[0].data();
+        setPharmacyPhone(data.phone || '');
+      }
+    }
+    fetchPharmacyPhone();
+  }, []);
 
   const filtered = useMemo(() => {
     const query = q.toLowerCase();
@@ -31,10 +57,24 @@ export default function Home() {
 
   const handleProductOpen = (productId) => navigate(`/product/${productId}`);
 
+  const handleProfileSave = async ({ phone }) => {
+    // Update Firestore user doc
+    await updateDoc(doc(db, 'users', user.uid), { phone });
+    setShowProfileModal(false);
+    window.location.reload();
+  };
+
   if (!products.length) return <LoadingSkeleton lines={6} className="my-8" />;
 
   return (
     <div className="min-h-screen w-full px-0 pb-28">
+      <ProfileCompletionModal
+        open={showProfileModal}
+        onClose={() => {}}
+        onSave={handleProfileSave}
+        isPharmacy={false}
+        initialPhone={profile?.phone || ''}
+      />
       {/* Top bar */}
       <div className="sticky top-0 z-30 w-full bg-white border-b px-3">
         <div className="w-full mx-auto py-4">
@@ -89,6 +129,8 @@ export default function Home() {
           </div>
         </div>
       </div>
+      {/* Floating message button for customer */}
+      <FloatingMessageButton pharmacyPhone={pharmacyPhone} />
     </div>
   );
 }

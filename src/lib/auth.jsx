@@ -42,7 +42,7 @@ export function AuthProvider({ children }) {
 
   const signIn = (email, password) => signInWithEmailAndPassword(auth, email, password);
 
-  const signUp = async ({ email, password, displayName, role, address, lat, lon }) => {
+  const signUp = async ({ email, password, displayName, role, address, lat, lon, phone }) => {
     const { user } = await createUserWithEmailAndPassword(auth, email, password);
     if (displayName) await updateProfile(user, { displayName });
     // Default role to 'customer' if not provided
@@ -50,9 +50,10 @@ export function AuthProvider({ children }) {
     if (address) userData.address = address;
     if (lat) userData.lat = lat;
     if (lon) userData.lon = lon;
+    if (phone) userData.phone = phone;
     await setDoc(doc(db, 'users', user.uid), userData);
     if (userData.role === 'pharmacy') {
-      await setDoc(doc(db, 'pharmacies', user.uid), { id: user.uid, name: displayName || 'Pharmacy', email, address: address || '', etaMins: 30, phone: '' });
+      await setDoc(doc(db, 'pharmacies', user.uid), { id: user.uid, name: displayName || 'Pharmacy', email, address: address || '', etaMins: 30, phone: phone || '' });
     }
     await sendVerification(user);
     return { user, verificationSent: true };

@@ -6,7 +6,7 @@ import {
 } from 'firebase/firestore';
 
 // For single-pharmacy, use the actual pharmacy UID
-export const PHARMACY_UID = 'qYk8CMeTLMNPMtSQCwKZi73jIpo1';
+//export const PHARMACY_UID = 'qYk8CMeTLMNPMtSQCwKZi73jIpo1';
 
 /* -----------------------------
    PHARMACIES (needed by Home.jsx)
