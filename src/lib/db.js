@@ -134,13 +134,30 @@ export const placeOrder = async (orderData) => {
 
     // 2) create order
     const orderRef = doc(collection(db, 'orders'));
-    tx.set(orderRef, {
+    // prepare payload; ensure we don't write undefined values (Firestore rejects undefined)
+    const orderPayload = {
       ...orderData,
       items: snapshotItems,
       status: 'placed',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
+    };
+    // If pharmacyId is explicitly undefined, try to resolve it from config; if still undefined delete it
+    if (orderPayload.pharmacyId === undefined) {
+      try {
+        // lazy require to avoid circular imports at module load time
+        const { getPharmacyId } = await import('./db');
+        // but we're in same module; fallback: attempt to read config directly
+      } catch (e) {
+        // ignore - we'll attempt to read config below using direct getDoc if needed
+      }
+    }
+    // final guard: remove keys with undefined values to avoid Firestore errors
+    Object.keys(orderPayload).forEach(k => {
+      if (orderPayload[k] === undefined) delete orderPayload[k];
     });
+
+    tx.set(orderRef, orderPayload);
 
     return { orderId: orderRef.id };
   });

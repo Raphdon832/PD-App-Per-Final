@@ -74,9 +74,8 @@ export default function Checkout() {
       }
 
       const items = cart.map(item => ({ productId: item.id, quantity: item.qty || 1 }));
-      const result = await placeOrder({
+      const orderData = {
         customerId: user.uid,
-        pharmacyId,
         items,
         total,
         paymentMethod,
@@ -84,7 +83,13 @@ export default function Checkout() {
         paid: false, // will be set by pharmacy after confirmation
         address, // add address
         phone    // add phone
-      });
+      };
+      // Only attach pharmacyId if it was successfully resolved
+      if (typeof pharmacyId !== 'undefined') {
+        orderData.pharmacyId = pharmacyId;
+      }
+
+      const result = await placeOrder(orderData);
       setSuccess(result.orderId);
       setShowPaymentModal(false);
     } catch (e) {
