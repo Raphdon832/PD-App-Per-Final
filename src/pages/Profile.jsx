@@ -1,10 +1,11 @@
 import { Dialog } from '@headlessui/react';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, doc, getDoc, onSnapshot, query, updateDoc, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { User, Package } from 'lucide-react';
 import { ensureItemNames } from '@/lib/orders-view';
+import WhatsappEditModal from '@/components/WhatsappEditModal';
 import FloatingMessageButton from '@/components/FloatingMessageButton';
 
 export default function Profile() {
@@ -13,6 +14,8 @@ export default function Profile() {
   const [showAllOrders, setShowAllOrders] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [showWhatsappEdit, setShowWhatsappEdit] = useState(false);
+  const [whatsapp, setWhatsapp] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -27,6 +30,21 @@ export default function Profile() {
     });
     return () => unsub();
   }, [user]);
+
+  useEffect(() => {
+    async function fetchWhatsapp() {
+      try {
+        const cfg = await getDoc(doc(db, 'config', 'app'));
+        if (cfg.exists()) setWhatsapp(cfg.data().whatsapp || '');
+      } catch { setWhatsapp(''); }
+    }
+    fetchWhatsapp();
+  }, []);
+
+  const handleWhatsappSave = async (newWhatsapp) => {
+    setWhatsapp(newWhatsapp);
+    await updateDoc(doc(db, 'config', 'app'), { whatsapp: newWhatsapp });
+  };
 
   // Sort orders by createdAt descending
   const sortedOrders = [...orders].sort((a, b) => {
@@ -69,6 +87,21 @@ export default function Profile() {
             Log Out
           </button>
         </div>
+
+        {/* Floating Edit WhatsApp Button */}
+        {profile?.role === 'pharmacy' && (
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-sm text-zinc-600">WhatsApp for customers:</span>
+            <span className="font-semibold text-green-700">{whatsapp || 'Not set'}</span>
+            <button className="ml-2 px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-semibold hover:bg-green-200" onClick={()=>setShowWhatsappEdit(true)}>Edit</button>
+          </div>
+        )}
+        <WhatsappEditModal
+          open={showWhatsappEdit}
+          onClose={() => setShowWhatsappEdit(false)}
+          initialWhatsapp={whatsapp}
+          onSave={handleWhatsappSave}
+        />
 
         {/* Orders Section */}
         {profile?.role !== 'pharmacy' ? (

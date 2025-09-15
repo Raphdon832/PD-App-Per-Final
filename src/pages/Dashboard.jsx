@@ -7,7 +7,8 @@ import ProductEditModal from '@/components/ProductEditModal';
 import PharmacyOrdersSection from '@/components/PharmacyOrdersSection';
 import ProfileCompletionModal from '@/components/ProfileCompletionModal';
 import DashboardSearchModal from '@/components/DashboardSearchModal';
-import { collection, query, where, getDocs, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+
+import { collection, query, where, getDocs, updateDoc, doc, deleteDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 export default function Dashboard() {
@@ -24,6 +25,7 @@ export default function Dashboard() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [orders, setOrders] = useState([]);
+  
 
   useEffect(() => {
     async function fetchStats() {
@@ -68,6 +70,20 @@ export default function Dashboard() {
     }
   }, [profile]);
 
+  useEffect(() => {
+    async function fetchWhatsapp() {
+      try {
+        const cfg = await getDoc(doc(db, 'config', 'app'));
+        if (cfg.exists()) {
+          setWhatsapp(cfg.data().whatsapp || '');
+        }
+      } catch (e) {
+        setWhatsapp('');
+      }
+    }
+    fetchWhatsapp();
+  }, []);
+
   const handleEdit = (product) => {
     setEditProduct(product);
     setShowEdit(true);
@@ -91,6 +107,11 @@ export default function Dashboard() {
     await updateDoc(doc(db, 'pharmacies', profile.uid), { phone, address });
     setShowProfileModal(false);
     window.location.reload();
+  };
+
+  const handleWhatsappSave = async (newWhatsapp) => {
+    setWhatsapp(newWhatsapp);
+    await updateDoc(doc(db, 'config', 'app'), { whatsapp: newWhatsapp });
   };
 
   if (loading) {
@@ -150,6 +171,10 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+
+          {/* Floating Edit WhatsApp Button */}
+        
+
           {/* Add Products Section */}
           <div className="flex gap-2 w-full">
             <button
@@ -227,7 +252,13 @@ export default function Dashboard() {
               onDelete={handleDelete}
             />
           )}
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-sm text-zinc-600">WhatsApp for customers:</span>
+            <span className="font-semibold text-green-700">{whatsapp || 'Not set'}</span>
+            <button className="ml-2 px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-semibold hover:bg-green-200" onClick={()=>setShowWhatsappEdit(true)}>Edit</button>
+          </div>
         </div>
+        
         {/* Floating Search Button */}
         <button
           className="fixed bottom-40 right-8 z-50 bg-white border border-green-500 text-green-600 rounded-full shadow-lg w-12 h-12 flex items-center justify-center text-2xl font-bold leading-none hover:bg-green-50 transition"
@@ -251,6 +282,12 @@ export default function Dashboard() {
           products={products}
           orders={orders}
           onEditProduct={handleEdit}
+        />
+        <WhatsappEditModal
+          open={showWhatsappEdit}
+          onClose={() => setShowWhatsappEdit(false)}
+          initialWhatsapp={whatsapp}
+          onSave={handleWhatsappSave}
         />
       </main>
     </div>

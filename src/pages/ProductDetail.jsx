@@ -3,10 +3,29 @@ import { addToCart } from '@/lib/db';
 import { useAuth } from '@/lib/auth';
 import { useNavigate } from 'react-router-dom';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
 
 export default function ProductDetail({ product, pharmacy }) {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [pharmacyPhone, setPharmacyPhone] = useState('');
+
+  useEffect(() => {
+    async function fetchPhone() {
+      try {
+        const cfg = await getDoc(doc(db, 'config', 'app'));
+        if (cfg.exists()) {
+          setPharmacyPhone(cfg.data().phone || cfg.data().whatsapp || cfg.data().whatsappNumber || cfg.data().phoneNumber || '');
+        }
+      } catch {
+        setPharmacyPhone('');
+      }
+    }
+    fetchPhone();
+  }, []);
+
   if (!product) return <LoadingSkeleton lines={5} className="my-8" />;
 
   const price = Number(product.price || 0);
@@ -88,8 +107,10 @@ export default function ProductDetail({ product, pharmacy }) {
               Add to Cart
             </button>
             <a
-              href={`tel:${pharmacy?.phone || ''}`}
+              href={pharmacyPhone ? `tel:${pharmacyPhone}` : undefined}
               className="flex-1 h-[38px] rounded-full border border-brand-accent text-brand-accent text-[15px] font-poppins font-semibold flex items-center justify-center gap-2 bg-white active:scale-95 hover:bg-brand-accent/10 transition"
+              disabled={!pharmacyPhone}
+              style={!pharmacyPhone ? { pointerEvents: 'none', opacity: 0.5 } : {}}
             >
               <Phone className="h-4 w-4" /> Call to Order
             </a>

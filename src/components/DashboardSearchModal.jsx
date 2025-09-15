@@ -4,15 +4,25 @@ export default function DashboardSearchModal({ open, onClose, products, orders, 
   const [query, setQuery] = useState('');
   const [tab, setTab] = useState('products');
 
-  const filteredProducts = products.filter(p =>
-    p.name.toLowerCase().includes(query.toLowerCase()) ||
-    (p.sku && p.sku.toLowerCase().includes(query.toLowerCase()))
-  );
-  const filteredOrders = orders.filter(o =>
-    o.id.toLowerCase().includes(query.toLowerCase()) ||
-    (o.customerName && o.customerName.toLowerCase().includes(query.toLowerCase())) ||
-    (o.items && o.items.some(i => i.name && i.name.toLowerCase().includes(query.toLowerCase())))
-  );
+  const filteredProducts = products.filter(p => {
+    const q = query.toLowerCase();
+    return (
+      p.name.toLowerCase().includes(q) ||
+      (p.sku && p.sku.toLowerCase().includes(q)) ||
+      (typeof p.price === 'number' && q && p.price.toString().includes(q))
+    );
+  });
+  const filteredOrders = orders.filter(o => {
+    const q = query.toLowerCase();
+    const dateStr = o.createdAt?.toDate ? o.createdAt.toDate().toLocaleString() : '';
+    return (
+      o.id.toLowerCase().includes(q) ||
+      (o.customerName && o.customerName.toLowerCase().includes(q)) ||
+      (o.items && o.items.some(i => i.name && i.name.toLowerCase().includes(q))) ||
+      (typeof o.total === 'number' && q && o.total.toString().includes(q)) ||
+      (dateStr && dateStr.toLowerCase().includes(q))
+    );
+  });
 
   if (!open) return null;
 
