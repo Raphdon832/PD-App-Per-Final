@@ -225,7 +225,17 @@ export default function Orders() {
               <div className="text-[15px] font-medium">Total:</div>
               <div className="text-[15px] font-bold text-sky-700">₦{Number(modalOrder.total).toLocaleString()}</div>
             </div>
-            <div className="mt-2 text-xs text-zinc-400">Status: {modalOrder.status || 'pending'}</div>
+            <div className="mt-2 text-xs text-zinc-400">
+              Status: {modalOrder.status || 'pending'}
+              {modalOrder.paymentMethod === 'transfer' && (
+                <>
+                  {modalOrder.paid
+                    ? <span className="ml-2 text-green-600 font-semibold">Payment confirmed</span>
+                    : <span className="ml-2 text-orange-600 font-semibold">Payment not confirmed</span>
+                  }
+                </>
+              )}
+            </div>
           </div>
         )}
       </Modal>

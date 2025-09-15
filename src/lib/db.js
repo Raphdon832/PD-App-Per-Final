@@ -2,7 +2,7 @@
 import { db } from './firebase';
 import {
   collection, query, orderBy, addDoc, doc, getDoc, getDocs, setDoc, updateDoc,
-  deleteDoc, onSnapshot, serverTimestamp, writeBatch, increment, limit, runTransaction
+  deleteDoc, onSnapshot, serverTimestamp, writeBatch, increment, limit, runTransaction, startAfter
 } from 'firebase/firestore';
 
 // Helper to get the single pharmacy's ID from config/app
@@ -123,7 +123,10 @@ export const placeOrder = async ({ customerId, items, total }) => {
       total: Number(total || 0),
       status: 'placed',
       createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+      updatedAt: serverTimestamp(),
+      paymentMethod: arguments[0]?.paymentMethod || 'delivery',
+      paymentRef: arguments[0]?.paymentRef || '',
+      paid: arguments[0]?.paid || false
     });
 
     return { orderId: orderRef.id };
@@ -153,4 +156,32 @@ export const listenOrders = (uid, cb) => {
     s => cb(s.docs.map(d => ({ id: d.id, ...d.data() }))),
     e => console.error('listenOrders error:', e)
   );
+};
+
+/**
+ * Fetch a page of products, ordered by createdAt descending.
+ * @param {number} pageSize - Number of products per page
+ * @param {object} [lastDoc] - The last document from the previous page (for pagination)
+ * @returns { products, lastDoc } - Array of products and the last doc snapshot
+ */
+export const fetchProductsPage = async (pageSize = 20, lastDoc = null) => {
+  let q = query(
+    collection(db, 'products'),
+    orderBy('createdAt', 'desc'),
+    limit(pageSize)
+  );
+  if (lastDoc) {
+    q = query(
+      collection(db, 'products'),
+      orderBy('createdAt', 'desc'),
+      startAfter(lastDoc),
+      limit(pageSize)
+    );
+  }
+  const snap = await getDocs(q);
+  const products = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  return {
+    products,
+    lastDoc: snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null
+  };
 };

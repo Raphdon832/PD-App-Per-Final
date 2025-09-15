@@ -122,3 +122,7 @@ export async function checkoutAsCustomer({ user, pharmacyId, cartItems }) {
 
   return { orderId: orderRef.id };
 }
+
+export async function updateOrderPaid(orderId) {
+  await updateDoc(doc(db, 'orders', orderId), { paid: true });
+}

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { collection, doc, getDoc, onSnapshot, query } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { removeFromCart } from '@/lib/db';
-import { checkoutAsCustomer } from '@/lib/orders';
 import { useAuth } from '@/lib/auth';
 import { useNavigate } from 'react-router-dom';
 import DeleteIcon from '@/icons/react/DeleteIcon';
@@ -28,24 +27,8 @@ export default function Cart() {
 
   const total = useMemo(() => items.reduce((s, i) => s + (i.product?.price||0) * i.qty, 0), [items]);
 
-  const checkout = async () => {
-    if (!user || !harmonizedItems.length) return;
-    const first = harmonizedItems[0];
-    const pharmacyId = first.product?.pharmacyId;
-    const cartItems = harmonizedItems.map(i => ({
-      id: i.product?.id,
-      name: i.product?.name,
-      price: i.product?.price,
-      qty: i.qty
-    }));
-    try {
-      await checkoutAsCustomer({ user, pharmacyId, cartItems });
-      alert('Checkout successful');
-      navigate('/orders'); // or your orders page route
-    } catch (err) {
-      console.error('Checkout failed:', { code: err.code, message: err.message });
-      alert(err.message || 'Checkout failed');
-    }
+  const checkout = () => {
+    navigate('/checkout');
   };
 
   // Harmonize duplicate items by productId

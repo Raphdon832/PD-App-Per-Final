@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Search } from 'lucide-react';
-import { listenProducts, addToCart } from '@/lib/db';
+import { fetchProductsPage, addToCart } from '@/lib/db';
 import { useAuth } from '@/lib/auth';
 import ProductCard from '@/components/ProductCard';
 import { useNavigate } from 'react-router-dom';
@@ -12,15 +12,37 @@ import { db } from '@/lib/firebase';
 
 export default function Home() {
   const [products, setProducts] = useState([]);
+  const [lastDoc, setLastDoc] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [q, setQ] = useState('');
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [pharmacyPhone, setPharmacyPhone] = useState('');
+  const sentinelRef = useRef(null);
 
   useEffect(() => {
-    listenProducts(setProducts);
+    (async () => {
+      setLoading(true);
+      const { products: firstPage, lastDoc: last } = await fetchProductsPage(20);
+      setProducts(firstPage);
+      setLastDoc(last);
+      setHasMore(!!last);
+      setLoading(false);
+    })();
   }, []);
+
+  const loadMore = async () => {
+    if (!lastDoc) return;
+    setLoadingMore(true);
+    const { products: nextPage, lastDoc: nextLast } = await fetchProductsPage(20, lastDoc);
+    setProducts((prev) => [...prev, ...nextPage]);
+    setLastDoc(nextLast);
+    setHasMore(!!nextLast);
+    setLoadingMore(false);
+  };
 
   useEffect(() => {
     if (user && profile && (!profile.phone || profile.phone === '')) {
@@ -64,7 +86,28 @@ export default function Home() {
     window.location.reload();
   };
 
-  if (!products.length) return <LoadingSkeleton lines={6} className="my-8" />;
+  useEffect(() => {
+    if (!hasMore || loadingMore) return;
+    const observer = new window.IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMore();
+        }
+      },
+      { threshold: 1 }
+    );
+    if (sentinelRef.current) {
+      observer.observe(sentinelRef.current);
+    }
+    return () => {
+      if (sentinelRef.current) {
+        observer.unobserve(sentinelRef.current);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasMore, loadingMore, lastDoc]);
+
+  if (loading) return <LoadingSkeleton lines={6} className="my-8" />;
 
   return (
     <div className="min-h-screen w-full px-0 pb-28">
@@ -127,6 +170,12 @@ export default function Home() {
               </div>
             ))}
           </div>
+          {/* Infinite scroll sentinel */}
+          {hasMore && (
+            <div ref={sentinelRef} className="flex justify-center mt-6 min-h-[32px]">
+              {loadingMore && <span className="text-zinc-400 text-sm">Loading…</span>}
+            </div>
+          )}
         </div>
       </div>
       {/* Floating message button for customer */}

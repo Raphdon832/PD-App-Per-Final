@@ -33,6 +33,7 @@ import ForgotPassword from '@/pages/auth/ForgotPassword';
 
 // Extra
 import ProductManager from '@/pages/ProductManager'; // New: simple product management UI for pharmacy
+import Checkout from '@/pages/Checkout';
 
 /* ---------------------------
    LAYOUTS
@@ -172,6 +173,8 @@ function Shell() {
         <Route path="/product/:id" element={<ProductDetailRoute />} />
         {/* Cart (customers only) */}
         {profile && profile.role === 'customer' && <Route path="/cart" element={<RequireAuth><Cart /></RequireAuth>} />}
+        {/* Checkout (customers only) */}
+        {profile && profile.role === 'customer' && <Route path="/checkout" element={<RequireAuth><Checkout /></RequireAuth>} />}
         {/* Profile (all users) */}
         <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
         {/* Fallback */}
