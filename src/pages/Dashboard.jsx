@@ -25,6 +25,7 @@ export default function Dashboard() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [orders, setOrders] = useState([]);
+  const [whatsapp, setWhatsapp] = useState('');
   
 
   useEffect(() => {
@@ -109,33 +110,23 @@ export default function Dashboard() {
     window.location.reload();
   };
 
-  const handleWhatsappSave = async (newWhatsapp) => {
-    setWhatsapp(newWhatsapp);
-    await updateDoc(doc(db, 'config', 'app'), { whatsapp: newWhatsapp });
-  };
-
   if (loading) {
     return <LoadingSkeleton lines={6} className="my-8" />;
   }
 
   // Error fallback for failed Firestore queries
   if (!profile || (profile.role === 'pharmacy' && products.length === 0 && totalProducts === 0)) {
-    if (window.dashboardFetchError) {
-      return (
-        <div className="pt-10 pb-28 w-full max-w-md mx-auto px-4 min-h-screen flex flex-col items-center justify-center">
-          <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-            <div className="text-red-600 font-bold text-lg mb-2">Error loading dashboard</div>
-            <div className="text-red-500 text-sm mb-2">{window.dashboardFetchError.message}</div>
-            <div className="text-zinc-500 text-xs">Check your Firestore rules and ensure your user document has <code>role: 'pharmacy'</code> set.</div>
-          </div>
-        </div>
-      );
-    }
     return (
       <div className="pt-10 pb-28 w-full max-w-md mx-auto px-4 min-h-screen flex flex-col items-center justify-center">
         <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-          <div className="text-red-600 font-bold text-lg mb-2">Error loading dashboard</div>
-          <div className="text-red-500 text-sm mb-2">Possible Firestore permission error or missing pharmacy role.</div>
+          {window.dashboardFetchError ? (
+            <>
+              <div className="text-red-600 font-bold text-lg mb-2">Error loading dashboard</div>
+              <div className="text-red-500 text-sm mb-2">{window.dashboardFetchError.message}</div>
+            </>
+          ) : (
+            <div className="text-red-600 font-bold text-lg mb-2">Error loading dashboard</div>
+          )}
           <div className="text-zinc-500 text-xs">Check your Firestore rules and ensure your user document has <code>role: 'pharmacy'</code> set.</div>
         </div>
       </div>
@@ -231,8 +222,8 @@ export default function Dashboard() {
                   p.stock,
                   p.sku
                 ]);
-                const csv = [headers.join(','), ...rows.map(r => r.map(x => `"${(x ?? '').toString().replace(/"/g, '""')}"`).join(','))].join('\n');
-                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const csv = [headers.join(','), ...rows.map(r => r.map(x => `"${(x ?? '').toString().replace(/"/g, '""')}"`).join(',')).join('\n')];
+                const blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url; a.download = 'pharmacy_inventory.csv'; a.click();
@@ -255,7 +246,6 @@ export default function Dashboard() {
           <div className="flex items-center gap-2 mt-2">
             <span className="text-sm text-zinc-600">WhatsApp for customers:</span>
             <span className="font-semibold text-green-700">{whatsapp || 'Not set'}</span>
-            <button className="ml-2 px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-semibold hover:bg-green-200" onClick={()=>setShowWhatsappEdit(true)}>Edit</button>
           </div>
         </div>
         
@@ -282,12 +272,6 @@ export default function Dashboard() {
           products={products}
           orders={orders}
           onEditProduct={handleEdit}
-        />
-        <WhatsappEditModal
-          open={showWhatsappEdit}
-          onClose={() => setShowWhatsappEdit(false)}
-          initialWhatsapp={whatsapp}
-          onSave={handleWhatsappSave}
         />
       </main>
     </div>
