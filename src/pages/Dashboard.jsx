@@ -189,12 +189,12 @@ export default function Dashboard() {
             <h2 className="text-lg font-semibold text-green-700 mb-2">Inventory</h2>
             <div className="flex flex-col gap-3">
               {(showAll ? products : products.slice(0, 3)).map(product => (
-                <div key={product.id} className="bg-white border border-zinc-200 rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:shadow transition" onClick={() => handleEdit(product)}>
+                <div key={product.id} className="bg-white border border-zinc-200 rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:shadow transition overflow-hidden" onClick={() => handleEdit(product)}>
                   {(product.image && !failedImageIds.includes(product.id)) ? (
                     <img
                       src={product.image}
                       alt={product.name}
-                      className="w-16 h-16 object-cover rounded-lg border"
+                      className="w-16 h-16 object-cover rounded-lg border flex-shrink-0"
                       onError={() => {
                         // mark this product image as failed so we fall back to avatar
                         setFailedImageIds(prev => prev.includes(product.id) ? prev : [...prev, product.id]);
@@ -205,16 +205,16 @@ export default function Dashboard() {
                       }}
                     />
                   ) : (
-                    <div className="w-16 h-16 flex items-center justify-center bg-green-50 text-green-700 rounded-lg border font-semibold text-lg">
+                    <div className="w-16 h-16 flex items-center justify-center bg-green-50 text-green-700 rounded-lg border font-semibold text-lg flex-shrink-0">
                       {product.name ? product.name.toString().trim().charAt(0).toUpperCase() : '?'}
                     </div>
                   )}
-                  <div className="flex-1">
-                    <div className="font-semibold text-zinc-800 text-[13px]">{product.name}</div>
-                    <div className="text-xs text-zinc-500">SKU: {product.sku || '-'}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-zinc-800 text-[13px] truncate">{product.name}</div>
+                    <div className="text-xs text-zinc-500 truncate">SKU: {product.sku || '-'}</div>
                     <div className="text-xs text-zinc-500">Stock: {product.stock ?? '-'}</div>
                   </div>
-                  <div className="text-orange-600 font-bold text-[13px]">₦{Number(product.price).toLocaleString()}</div>
+                  <div className="text-orange-600 font-bold text-[13px] flex-shrink-0 ml-2">₦{Number(product.price).toLocaleString()}</div>
                 </div>
               ))}
             </div>
@@ -228,9 +228,7 @@ export default function Dashboard() {
             <button
               className="mt-4 w-full rounded-[5px] bg-orange-500 text-white text-[13px] font-semibold py-2 shadow hover:bg-orange-600 transition"
               onClick={() => {
-                const headers = [
-                  'S/N', 'Name', 'Price', 'Description', 'Image', 'Category', 'Stock', 'SKU'
-                ];
+                const headers = ['S/N', 'Name', 'Price', 'Description', 'Image', 'Category', 'Stock', 'SKU'];
                 const rows = products.map((p, i) => [
                   i + 1,
                   p.name,
@@ -241,8 +239,11 @@ export default function Dashboard() {
                   p.stock,
                   p.sku
                 ]);
-                const csv = [headers.join(','), ...rows.map(r => r.map(x => `"${(x ?? '').toString().replace(/"/g, '""')}"`).join(',')).join('\n')];
-                const blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                const csvLines = [
+                  headers.map(h => `"${String(h).replace(/"/g, '""')}"`).join(','),
+                  ...rows.map(r => r.map(x => `"${String(x ?? '').replace(/"/g, '""')}"`).join(','))
+                ];
+                const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url; a.download = 'pharmacy_inventory.csv'; a.click();

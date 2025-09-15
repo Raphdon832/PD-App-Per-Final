@@ -23,7 +23,7 @@ export default function ProductCard({
 
   return (
     <Card
-      className="p-3 cursor-pointer relative flex flex-col justify-between"
+      className="p-3 cursor-pointer relative flex flex-col justify-between overflow-hidden min-w-0"
       onClick={onOpen}
       style={{ width: cardWidth, height: cardHeight, borderRadius: borderRadius || '10px' }}
     >
@@ -32,7 +32,7 @@ export default function ProductCard({
           <img
             src={product.image}
             alt={product.name}
-            className="object-contain h-full"
+            className="object-contain h-full max-w-full max-h-full"
             onError={() => setImgFailed(true)}
             onLoad={() => setImgFailed(false)}
           />
@@ -42,18 +42,20 @@ export default function ProductCard({
           </div>
         )}
       </div>
-      <div className="mt-1 text-xs text-zinc-500 font-poppins font-light" style={{ fontSize: '10px' }}>
+      <div className="mt-1 text-xs text-zinc-500 font-poppins font-light w-full overflow-hidden truncate" style={{ fontSize: '10px' }} title={vendorName}>
         {vendorName}
       </div>
       <div
-        className="mt-1 font-poppins"
+        className="mt-1 font-poppins w-full overflow-hidden truncate"
         style={{ fontSize: nameSize, fontWeight: nameWeight }}
+        title={product.name}
       >
         {product.name}
       </div>
       <div
-        className="font-poppins"
+        className="font-poppins w-full overflow-hidden truncate"
         style={{ fontSize: priceSize, color: priceColor, fontWeight: priceWeight }}
+        title={`₦${Number(product.price).toLocaleString()}`}
       >
         ₦{Number(product.price).toLocaleString()}
       </div>

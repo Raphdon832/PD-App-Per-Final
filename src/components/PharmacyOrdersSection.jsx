@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { processOrderAndReserveStock, updateOrderPaid, updateOrderStatus } from '@/lib/orders';
-import { collection, query, getDocs } from 'firebase/firestore';
+import { collection, query, getDocs, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getPharmacyId } from '@/lib/db';
 import { saveAs } from 'file-saver';
@@ -63,27 +63,45 @@ export default function PharmacyOrdersSection() {
   const [dateTo, setDateTo] = useState('');
 
   useEffect(() => {
-    async function fetchOrders() {
+    // Subscribe to orders in real-time. Filter by pharmacyId so updates propagate immediately.
+    let unsub = null;
+    (async () => {
       setLoading(true);
-      const pharmacyId = await getPharmacyId();
-      const q = query(collection(db, 'orders'));
-      const snap = await getDocs(q);
-      // Only show orders for this pharmacy (if you still store pharmacyId on order)
-      const ordersData = await Promise.all(snap.docs.map(async d => {
-        const data = d.data();
-        // If you want to filter by pharmacyId, uncomment below:
-        // if (data.pharmacyId && data.pharmacyId !== pharmacyId) return null;
-        const items = Array.isArray(data.items) ? data.items : [];
-        return {
-          id: d.id,
-          ...data,
-          items,
-        };
-      }));
-      setOrders(ordersData.filter(Boolean));
-      setLoading(false);
-    }
-    fetchOrders();
+      try {
+        const pharmacyId = await getPharmacyId();
+        const q = query(collection(db, 'orders'), where('pharmacyId', '==', pharmacyId), orderBy('createdAt', 'desc'));
+        unsub = onSnapshot(q, (snap) => {
+          const ordersData = snap.docs.map(d => {
+            const data = d.data();
+            return { id: d.id, ...data, items: Array.isArray(data.items) ? data.items : [] };
+          });
+          setOrders(ordersData);
+          setLoading(false);
+        }, (err) => {
+          console.error('orders onSnapshot error:', err);
+          setLoading(false);
+        });
+      } catch (e) {
+        // Fallback: listen to all orders if pharmacyId cannot be resolved
+        console.warn('Could not resolve pharmacyId for real-time orders subscription, falling back to all orders listener', e);
+        const qAll = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+        unsub = onSnapshot(qAll, (snap) => {
+          const ordersData = snap.docs.map(d => {
+            const data = d.data();
+            return { id: d.id, ...data, items: Array.isArray(data.items) ? data.items : [] };
+          });
+          setOrders(ordersData);
+          setLoading(false);
+        }, (err) => {
+          console.error('orders fallback onSnapshot error:', err);
+          setLoading(false);
+        });
+      }
+    })();
+
+    return () => {
+      if (typeof unsub === 'function') unsub();
+    };
   }, []);
 
   async function onChangeStatus(order, value) {
