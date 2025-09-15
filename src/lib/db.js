@@ -126,7 +126,9 @@ export const placeOrder = async ({ customerId, items, total }) => {
       updatedAt: serverTimestamp(),
       paymentMethod: arguments[0]?.paymentMethod || 'delivery',
       paymentRef: arguments[0]?.paymentRef || '',
-      paid: arguments[0]?.paid || false
+      paid: arguments[0]?.paid || false,
+      address: arguments[0]?.address || '', // save address
+      phone: arguments[0]?.phone || ''      // save phone
     });
 
     return { orderId: orderRef.id };

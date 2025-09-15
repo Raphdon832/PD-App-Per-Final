@@ -16,12 +16,13 @@ function formatDate(date) {
 
 function ordersToCSV(orders) {
   const headers = [
-    'Order ID', 'Date', 'Customer', 'Total', 'Payment Method', 'Payment Ref', 'Paid', 'Status', 'Items'
+    'Order ID', 'Date', 'Customer', 'Phone', 'Total', 'Payment Method', 'Payment Ref', 'Paid', 'Status', 'Items'
   ];
   const rows = orders.map(o => [
     o.id,
     formatDate(o.createdAt),
     o.customerName || o.customerId || '',
+    o.phone || o.customerPhone || '-',
     o.total,
     o.paymentMethod === 'transfer' ? 'Online Transfer' : 'Pay on Delivery',
     o.paymentRef || '',
@@ -34,12 +35,13 @@ function ordersToCSV(orders) {
 
 function ordersToXLSX(orders) {
   const headers = [
-    'Order ID', 'Date', 'Customer', 'Total', 'Payment Method', 'Payment Ref', 'Paid', 'Status', 'Items'
+    'Order ID', 'Date', 'Customer', 'Phone', 'Total', 'Payment Method', 'Payment Ref', 'Paid', 'Status', 'Items'
   ];
   const rows = orders.map(o => [
     o.id,
     formatDate(o.createdAt),
     o.customerName || o.customerId || '',
+    o.phone || o.customerPhone || '-',
     o.total,
     o.paymentMethod === 'transfer' ? 'Online Transfer' : 'Pay on Delivery',
     o.paymentRef || '',
@@ -174,6 +176,12 @@ export default function PharmacyOrdersSection() {
                   }}
                 >Mark as Paid</button>
               )}
+            </div>
+            <div className="mb-2 text-sm">
+              <b>Delivery Address:</b> {order.address || order.deliveryAddress || '-'}
+            </div>
+            <div className="mb-2 text-sm">
+              <b>Phone Number:</b> {order.phone || order.customerPhone || '-'}
             </div>
             <div className="mt-2">
               <label className="font-medium text-zinc-800 mr-2">Status:</label>

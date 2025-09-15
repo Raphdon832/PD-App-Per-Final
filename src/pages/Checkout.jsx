@@ -71,7 +71,9 @@ export default function Checkout() {
         total,
         paymentMethod,
         paymentRef: paymentMethod === 'transfer' ? paymentRef : '',
-        paid: false // will be set by pharmacy after confirmation
+        paid: false, // will be set by pharmacy after confirmation
+        address, // add address
+        phone    // add phone
       });
       setSuccess(result.orderId);
       setShowPaymentModal(false);
