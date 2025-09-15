@@ -64,7 +64,7 @@ export default function Cart() {
   if (user && items.length === 0) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-white">
-        <div className="text-brand-primary/40 font-extralight text-[18px] font-poppins text-center">Your cart is empty.</div>
+        <div className="text-brand-primary/40 font-light text-[18px] font-poppins text-center">Your cart is empty.</div>
       </div>
     );
   }

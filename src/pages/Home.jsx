@@ -121,7 +121,7 @@ export default function Home() {
       {/* Top bar */}
       <div className="sticky top-0 z-30 w-full bg-white border-b px-3">
         <div className="w-full mx-auto py-4">
-          <div className="text-[18px] md:text-[22px] font-medium text-brand-primary">
+          <div className="text-[18px] md:text-[22px] font-normal text-brand-primary">
             {user ? `Welcome, ${user.displayName?.split(' ')[0] || 'Friend'}` : 'Welcome'}
           </div>
         </div>

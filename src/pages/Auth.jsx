@@ -57,7 +57,10 @@ export default function AuthPage() {
             <>Have an account? <button type="button" className="text-brand-accent" onClick={()=>setMode('signin')}>Sign in</button></>
           )}
         </div>
+        <div className="text-[10px] mt-10 text-center text-gray-400">Powered by Economic and Business Strategies (EBS)</div>
       </form>
+      
     </div>
+ 
   );
 }

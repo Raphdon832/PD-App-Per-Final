@@ -54,11 +54,11 @@ export default function Profile() {
               <User className="h-10 w-10 text-brand-primary" />
             </div>
             <div className="text-xl font-bold text-brand-primary mb-1">{user.displayName || user.email}</div>
-            <div className="text-sm text-zinc-500 mb-2">{user.email}</div>
+            <div className="text-sm text-zinc-500 mb-1">{user.email}</div>
             {(profile?.address || profile?.phone) && (
               <div className="text-sm text-zinc-700 mb-2 text-center">
-                {profile?.address && (<><b>Address:</b> {profile.address}<br/></>)}
-                {profile?.phone && (<><b>Phone:</b> {profile.phone}</>)}
+                {profile?.address && (<><b></b> {profile.address}<br/></>)}
+                {profile?.phone && (<><b></b> {profile.phone}</>)}
               </div>
             )}
           </div>
@@ -71,54 +71,56 @@ export default function Profile() {
         </div>
 
         {/* Orders Section */}
-        <div className="rounded-3xl bg-white shadow px-6 py-6 border border-brand-accent/10">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Package className="h-5 w-5 text-brand-accent" />
-              <div className="text-lg font-semibold text-brand-accent">Your Orders <span className="ml-1 text-xs font-normal text-brand-primary/70">({orders.length})</span></div>
-            </div>
-            {sortedOrders.length > 3 && (
-              <button className="text-xs text-brand-primary underline" onClick={() => setShowAllOrders(a => !a)}>
-                {showAllOrders ? 'See less' : 'See more'}
-              </button>
-            )}
-          </div>
-          <div className="space-y-4">
-            {visibleOrders.length === 0 && (
-              <div className="text-sm text-zinc-400 text-center">No orders yet.</div>
-            )}
-            {visibleOrders.map(order => (
-              <div key={order.id} className="rounded-xl border border-brand-primary/10 bg-brand-primary/5 px-4 py-3 flex flex-col gap-1">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm font-semibold text-brand-primary">Order #{order.id.slice(0,8)}</div>
-                  <div className="text-xs text-zinc-500">
-                    {order.createdAt ? (order.createdAt.toDate ? order.createdAt.toDate().toLocaleString() : new Date(order.createdAt.seconds*1000).toLocaleString()) : ''}
-                  </div>
-                </div>
-                <ul className="mt-2 space-y-1">
-                  {order.items?.slice(0,3).map((it, idx) => (
-                    <li key={idx}>Name: {it.name || '(unknown)'} | Qty: {it.quantity}</li>
-                  ))}
-                  {order.items?.length > 3 && (
-                    <li className="text-sm opacity-70">+{order.items.length - 3} more…</li>
-                  )}
-                </ul>
-                <div className="mt-1 text-xs font-medium text-brand-accent">
-                  {order.status ? order.status : 'Processing'}
-                </div>
-                <div className="mt-1 text-xs">
-                  <b>Payment:</b> {order.paymentMethod || 'N/A'} | <b>Status:</b> {order.paymentMethod === 'Transfer' ? (order.paid ? 'Payment confirmed' : 'Payment not confirmed') : (order.paid ? 'Paid' : 'Unpaid')}
-                </div>
-                <button
-                  className="mt-2 self-end text-xs text-brand-primary underline"
-                  onClick={() => { setSelectedOrder(order); setDetailsOpen(true); }}
-                >
-                  View Details
-                </button>
+        {profile?.role !== 'pharmacy' ? (
+          <div className="rounded-3xl bg-white shadow px-6 py-6 border border-brand-accent/10">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Package className="h-5 w-5 text-brand-accent" />
+                <div className="text-lg font-semibold text-brand-accent">Your Orders <span className="ml-1 text-xs font-normal text-brand-primary/70">({orders.length})</span></div>
               </div>
-            ))}
+              {sortedOrders.length > 3 && (
+                <button className="text-xs text-brand-primary underline" onClick={() => setShowAllOrders(a => !a)}>
+                  {showAllOrders ? 'See less' : 'See more'}
+                </button>
+              )}
+            </div>
+            <div className="space-y-4">
+              {visibleOrders.length === 0 && (
+                <div className="text-sm text-zinc-400 text-center">No orders yet.</div>
+              )}
+              {visibleOrders.map(order => (
+                <div key={order.id} className="rounded-xl border border-brand-primary/10 bg-brand-primary/5 px-4 py-3 flex flex-col gap-1">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-semibold text-brand-primary">Order #{order.id.slice(0,8)}</div>
+                    <div className="text-xs text-zinc-500">
+                      {order.createdAt ? (order.createdAt.toDate ? order.createdAt.toDate().toLocaleString() : new Date(order.createdAt.seconds*1000).toLocaleString()) : ''}
+                    </div>
+                  </div>
+                  <ul className="mt-2 text-[12px] space-y-1">
+                    {order.items?.slice(0,3).map((it, idx) => (
+                      <li key={idx}>Name: {it.name || '(unknown)'} | Qty: {it.quantity}</li>
+                    ))}
+                    {order.items?.length > 3 && (
+                      <li className="text-[12px] opacity-70">+{order.items.length - 3} more…</li>
+                    )}
+                  </ul>
+                  <div className="mt-1 text-xs font-medium text-brand-accent">
+                    {order.status ? order.status : 'Processing'}
+                  </div>
+                  <div className="mt-1 text-xs">
+                    <b>Payment:</b> {order.paymentMethod || 'N/A'} | <b>Status:</b> {order.paymentMethod === 'Transfer' ? (order.paid ? 'Payment confirmed' : 'Payment not confirmed') : (order.paid ? 'Paid' : 'Unpaid')}
+                  </div>
+                  <button
+                    className="mt-2 self-end text-xs text-brand-primary underline"
+                    onClick={() => { setSelectedOrder(order); setDetailsOpen(true); }}
+                  >
+                    View Details
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : null}
 
         {/* Order Details Modal */}
         <Dialog open={detailsOpen} onClose={() => setDetailsOpen(false)} className="fixed z-50 inset-0 overflow-y-auto">
@@ -127,7 +129,7 @@ export default function Profile() {
             <div className="relative bg-white rounded-2xl max-w-md w-full mx-auto p-6 z-10">
               <Dialog.Title className="text-lg font-bold mb-2">Order Details</Dialog.Title>
               {selectedOrder && (
-                <div className="space-y-2">
+                <div className="space-y-2 text-[12px]">
                   <div><b>Order ID:</b> {selectedOrder.id}</div>
                   <div><b>Date:</b> {selectedOrder.createdAt ? (selectedOrder.createdAt.toDate ? selectedOrder.createdAt.toDate().toLocaleString() : new Date(selectedOrder.createdAt.seconds*1000).toLocaleString()) : ''}</div>
                   <div><b>Status:</b> {selectedOrder.status || 'Processing'}</div>
@@ -146,7 +148,7 @@ export default function Profile() {
                 </div>
               )}
               <button
-                className="mt-4 w-full rounded-lg bg-brand-primary text-white py-2 font-semibold hover:bg-brand-primary/90"
+                className="mt-4 w-full rounded-lg bg-brand-primary text-white text-[12px] py-2 font-semibold hover:bg-brand-primary/90"
                 onClick={() => setDetailsOpen(false)}
               >
                 Close

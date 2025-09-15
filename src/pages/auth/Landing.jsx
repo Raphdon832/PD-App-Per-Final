@@ -20,6 +20,8 @@ return (
         Sign In / Create Account
       </button>
     </div>
+
+    <div className="text-[10px] mt-60 text-center text-gray-400">Powered by Economic and Business Strategies (EBS)</div>
   </AuthLayout>
 );
 }

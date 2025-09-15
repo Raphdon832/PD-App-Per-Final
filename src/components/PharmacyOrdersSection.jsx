@@ -6,7 +6,7 @@ import { getPharmacyId } from '@/lib/db';
 import { saveAs } from 'file-saver';
 import * as XLSX from 'xlsx';
 
-const STATUS_OPTIONS = ['fulfilled', 'processing', 'cancelled'];
+const STATUS_OPTIONS = ['fulfilled', 'processing', 'cancelled', 'shipped', 'completed', 'placed'];
 
 function formatDate(date) {
   if (!date) return '';
