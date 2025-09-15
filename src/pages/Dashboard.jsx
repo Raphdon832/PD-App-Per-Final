@@ -243,10 +243,6 @@ export default function Dashboard() {
               onDelete={handleDelete}
             />
           )}
-          <div className="flex items-center gap-2 mt-2">
-            <span className="text-sm text-zinc-600">WhatsApp for customers:</span>
-            <span className="font-semibold text-green-700">{whatsapp || 'Not set'}</span>
-          </div>
         </div>
         
         {/* Floating Search Button */}
