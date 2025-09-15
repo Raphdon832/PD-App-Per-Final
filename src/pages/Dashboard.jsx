@@ -8,7 +8,7 @@ import PharmacyOrdersSection from '@/components/PharmacyOrdersSection';
 import ProfileCompletionModal from '@/components/ProfileCompletionModal';
 import DashboardSearchModal from '@/components/DashboardSearchModal';
 
-import { collection, query, where, getDocs, updateDoc, doc, deleteDoc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, updateDoc, doc, deleteDoc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 export default function Dashboard() {
@@ -27,7 +27,9 @@ export default function Dashboard() {
   const [orders, setOrders] = useState([]);
   const [whatsapp, setWhatsapp] = useState('');
   const [failedImageIds, setFailedImageIds] = useState([]);
-  
+  const [newOrderModalOpen, setNewOrderModalOpen] = useState(false);
+  const [newOrderData, setNewOrderData] = useState(null);
+  const initialOrdersSnapshot = React.useRef(true);
 
   useEffect(() => {
     async function fetchStats() {
@@ -47,12 +49,9 @@ export default function Dashboard() {
         const productsSnap = await getDocs(query(collection(db, 'products'), where('pharmacyId', '==', profile.uid)));
         setTotalProducts(productsSnap.size);
         setProducts(productsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-        // Orders
-        const ordersSnap = await getDocs(query(collection(db, 'orders'), where('pharmacyId', '==', profile.uid)));
-        setTotalOrders(ordersSnap.size);
-        setOrders(ordersSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-        setLoading(false);
-      } catch (err) {
+        // Orders: handled by real-time subscription below (keeps totalOrders in sync)
+         setLoading(false);
+       } catch (err) {
         setLoading(false);
         setProducts([]);
         setOrders([]);
@@ -111,6 +110,42 @@ export default function Dashboard() {
     window.location.reload();
   };
 
+  // Real-time subscription to orders
+  useEffect(() => {
+    // subscribe to orders count and list in real-time so dashboard totals update immediately
+    let unsub = null;
+    (async () => {
+      if (!profile || profile.role !== 'pharmacy') return;
+      try {
+        const q = query(collection(db, 'orders'), where('pharmacyId', '==', profile.uid));
+        unsub = onSnapshot(q, snap => {
+          // detect new orders (avoid showing on initial snapshot)
+          if (initialOrdersSnapshot.current) {
+            // first time: populate state but don't show modal
+            initialOrdersSnapshot.current = false;
+          } else {
+            // examine docChanges to find newly added orders
+            const added = snap.docChanges().filter(ch => ch.type === 'added');
+            if (added.length > 0) {
+              // show the most recent added order in modal
+              const doc = added[added.length - 1].doc;
+              setNewOrderData({ id: doc.id, ...doc.data() });
+              setNewOrderModalOpen(true);
+            }
+          }
+          setTotalOrders(snap.size);
+          setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        }, err => {
+          console.error('dashboard orders onSnapshot error', err);
+        });
+      } catch (e) {
+        console.error('dashboard orders subscription failed', e);
+      }
+    })();
+
+    return () => { if (typeof unsub === 'function') unsub(); };
+  }, [profile]);
+
   if (loading) {
     return <LoadingSkeleton lines={6} className="my-8" />;
   }
@@ -144,6 +179,29 @@ export default function Dashboard() {
         initialPhone={profile?.phone || ''}
         initialAddress={profile?.address || ''}
       />
+      {/* New Order Modal */}
+      {newOrderModalOpen && newOrderData && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-bold text-green-700 mb-2">New Order Received</h3>
+            <div className="text-sm text-zinc-700 mb-3">Order ID: <span className="font-mono text-xs">{newOrderData.id}</span></div>
+            <div className="mb-3">
+              <div className="font-semibold">Items</div>
+              <ul className="ml-4 list-disc text-sm text-zinc-700">
+                {(newOrderData.items || []).map((it, idx) => (
+                  <li key={idx}>{it.name || it.productId} x{it.quantity || it.qty || 1}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="text-sm mb-2"><b>Total:</b> ₦{Number(newOrderData.total || 0).toLocaleString()}</div>
+            <div className="text-sm mb-4"><b>Phone:</b> {newOrderData.phone || newOrderData.customerPhone || '-'}</div>
+            <div className="flex gap-2 justify-end">
+              <button className="px-4 py-2 text-sm rounded bg-zinc-200" onClick={() => { setNewOrderModalOpen(false); setNewOrderData(null); }}>Close</button>
+              <button className="px-4 py-2 text-sm rounded bg-green-600 text-white" onClick={() => { setNewOrderModalOpen(false); /* optionally navigate to orders */ }}>View Orders</button>
+            </div>
+          </div>
+        </div>
+      )}
       <header className="sticky top-0 z-20 bg-white/90 backdrop-blur-md pb-2 pt-4 -mx-auto sm:-mx-5 md:-mx-8 lg:-mx-12 xl:-mx-0 px-4 sm:px-5 md:px-8 lg:px-12 xl:px-0">
         <h1 className="text-[28px] font-bold text-green-700 leading-none tracking-tight">Pharmacy Dashboard</h1>
       </header>
