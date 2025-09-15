@@ -29,18 +29,36 @@ export const addProduct = async (data) => {
   await addDoc(ref, { ...data, createdAt: serverTimestamp() });
 };
 
-export const bulkAddProducts = async (rows) => {
+export const bulkAddProducts = async (rows, pharmacyId) => {
+  // Ensure we have a pharmacyId; fallback to config/app if not provided
+  if (!pharmacyId) {
+    try {
+      pharmacyId = await getPharmacyId();
+    } catch (e) {
+      console.warn('bulkAddProducts: could not determine pharmacyId from config, proceeding without pharmacyId', e);
+    }
+  }
+
   const batch = writeBatch(db);
   rows.forEach((r) => {
     const ref = doc(collection(db, 'products'));
+    // normalize fields: allow either image or imageUrl from CSV/XLSX
+    const imageUrl = r.image || r.imageUrl || '';
     batch.set(ref, {
-      ...r,
-      price: Number(r.price),
+      name: r.name || '',
+      price: Number(r.price) || 0,
       stock: Number(r.stock || 0),
-      createdAt: serverTimestamp()
+      description: r.description || '',
+      image: imageUrl,
+      imageUrl: imageUrl,
+      category: r.category || 'Over‑the‑Counter',
+      sku: r.sku || '',
+      createdAt: serverTimestamp(),
+      pharmacyId // Ensure products are tagged to the current pharmacy (may be undefined)
     });
   });
   await batch.commit();
+  return { added: rows.length };
 };
 
 export const removeProduct = (id) => deleteDoc(doc(db, 'products', id));

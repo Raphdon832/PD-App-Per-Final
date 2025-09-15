@@ -26,6 +26,7 @@ export default function Dashboard() {
   const [showSearch, setShowSearch] = useState(false);
   const [orders, setOrders] = useState([]);
   const [whatsapp, setWhatsapp] = useState('');
+  const [failedImageIds, setFailedImageIds] = useState([]);
   
 
   useEffect(() => {
@@ -189,7 +190,25 @@ export default function Dashboard() {
             <div className="flex flex-col gap-3">
               {(showAll ? products : products.slice(0, 3)).map(product => (
                 <div key={product.id} className="bg-white border border-zinc-200 rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:shadow transition" onClick={() => handleEdit(product)}>
-                  <img src={product.image} alt={product.name} className="w-16 h-16 object-cover rounded-lg border" />
+                  {(product.image && !failedImageIds.includes(product.id)) ? (
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="w-16 h-16 object-cover rounded-lg border"
+                      onError={() => {
+                        // mark this product image as failed so we fall back to avatar
+                        setFailedImageIds(prev => prev.includes(product.id) ? prev : [...prev, product.id]);
+                      }}
+                      onLoad={() => {
+                        // if previously marked failed, remove from failed list
+                        setFailedImageIds(prev => prev.filter(id => id !== product.id));
+                      }}
+                    />
+                  ) : (
+                    <div className="w-16 h-16 flex items-center justify-center bg-green-50 text-green-700 rounded-lg border font-semibold text-lg">
+                      {product.name ? product.name.toString().trim().charAt(0).toUpperCase() : '?'}
+                    </div>
+                  )}
                   <div className="flex-1">
                     <div className="font-semibold text-zinc-800 text-[13px]">{product.name}</div>
                     <div className="text-xs text-zinc-500">SKU: {product.sku || '-'}</div>
