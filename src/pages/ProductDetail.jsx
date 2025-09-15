@@ -53,9 +53,9 @@ export default function ProductDetail({ product, pharmacy }) {
         <div className="pt-6 sticky top-0 z-20 bg-white border-b border-brand-primary/10 pb-2">
           <button
             onClick={() => navigate(-1)}
-            className="w-[90px] h-[34px] font-poppins font-light tracking-tight text-[15px] flex items-center justify-center rounded-full bg-white border border-brand-primary/20 text-brand-primary"
+            className="w-[34px] h-[34px] font-poppins font-light tracking-tight text-[15px] flex items-center justify-center rounded-full bg-white border border-brand-primary/20 text-brand-primary"
           >
-            <ArrowLeft className="h-4 w-4 mr-1" /> Back
+            <ArrowLeft className="h-4 w-4 mr-1" />
           </button>
         </div>
 
@@ -102,13 +102,13 @@ export default function ProductDetail({ product, pharmacy }) {
                 if (!product.id) return alert('Product unavailable. Please try again.');
                 try { await addToCart(user.uid, product.id, 1); } catch { alert('Failed to add to cart.'); }
               }}
-              className="flex-1 h-[38px] rounded-full bg-brand-primary text-white text-[15px] font-poppins font-semibold shadow-sm active:scale-[0.99] hover:bg-brand-primary/90 transition"
+              className="flex-1 h-[30px] rounded-[7px] bg-brand-primary text-white text-[13px] font-poppins font-semibold shadow-sm active:scale-[0.99] hover:bg-brand-primary/90 transition"
             >
               Add to Cart
             </button>
             <a
               href={pharmacyPhone ? `tel:${pharmacyPhone}` : undefined}
-              className="flex-1 h-[38px] rounded-full border border-brand-accent text-brand-accent text-[15px] font-poppins font-semibold flex items-center justify-center gap-2 bg-white active:scale-95 hover:bg-brand-accent/10 transition"
+              className="flex-1 h-[30px] rounded-[7px] border border-brand-accent text-brand-accent text-[13px] font-poppins font-semibold flex items-center justify-center gap-2 bg-white active:scale-95 hover:bg-brand-accent/10 transition"
               disabled={!pharmacyPhone}
               style={!pharmacyPhone ? { pointerEvents: 'none', opacity: 0.5 } : {}}
             >

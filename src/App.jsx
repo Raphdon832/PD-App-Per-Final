@@ -53,7 +53,14 @@ function AppLayout() {
   useEffect(() => {
     if (!user || (profile && profile.role !== 'customer')) return setCartCount(0);
     const q = query(collection(db, 'users', user.uid, 'cart'));
-    const unsub = onSnapshot(q, (snap) => setCartCount(snap.size));
+    const unsub = onSnapshot(q, (snap) => {
+      let total = 0;
+      snap.docs.forEach(doc => {
+        const data = doc.data();
+        total += data.qty || 0;
+      });
+      setCartCount(total);
+    });
     return unsub;
   }, [user, profile]);
 

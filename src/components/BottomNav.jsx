@@ -22,12 +22,14 @@ export default function BottomNav({ tab, setTab, cartCount = 0 }) {
             const isCart = it.key === '/cart';
             return (
               <button key={it.key} onClick={() => setTab(it.key)} className={`relative flex flex-col items-center text-xs ${isActive ? 'text-brand-primary' : 'text-zinc-400'} focus:outline-none w-full`}>
-                <IconComponent className={`h-6 w-6 mb-1 ${iconColor}`} />
-                {isCart && cartCount > 0 ? (
-                  <span className="absolute -top-1.5 -right-1.5 bg-brand-primary text-white text-[10px] min-w-[18px] h-[18px] flex items-center justify-center rounded-full px-1 font-bold border-2 border-white shadow">
-                    {cartCount}
-                  </span>
-                ) : null}
+                <span className="relative">
+                  <IconComponent className={`h-6 w-6 mb-1 ${iconColor}`} />
+                  {isCart && cartCount > 0 ? (
+                    <span className="absolute -top-1.5 -right-2 bg-brand-primary text-white text-[10px] min-w-[18px] h-[18px] flex items-center justify-center rounded-full px-1 font-bold border-2 border-white shadow">
+                      {cartCount}
+                    </span>
+                  ) : null}
+                </span>
                 <span className="font-medium">{it.label}</span>
               </button>
             );
