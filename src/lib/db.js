@@ -66,9 +66,9 @@ export const removeFromCart = (uid, itemId) => deleteDoc(doc(db, 'users', uid, '
  * Writes happen second (inside tx): stock decrements + order doc.
  * Cart clearing happens AFTER tx (outside) in a separate batch.
  */
-export const placeOrder = async ({ customerId, items, total }) => {
+export const placeOrder = async (orderData) => {
   // Normalize incoming items early
-  const normalized = (items || []).map(it => ({
+  const normalized = (orderData.items || []).map(it => ({
     productId: String(it.productId || it.id),
     quantity: Number(it.quantity ?? it.qty ?? 0)
   })).filter(it => it.productId && it.quantity > 0);
@@ -105,7 +105,6 @@ export const placeOrder = async ({ customerId, items, total }) => {
       });
     }
 
-    // ----- WRITES (must be after reads; no new reads below)
     // 1) decrement stock / increment sold
     for (let i = 0; i < normalized.length; i++) {
       const qty = normalized[i].quantity;
@@ -118,17 +117,11 @@ export const placeOrder = async ({ customerId, items, total }) => {
     // 2) create order
     const orderRef = doc(collection(db, 'orders'));
     tx.set(orderRef, {
-      customerId,
+      ...orderData,
       items: snapshotItems,
-      total: Number(total || 0),
       status: 'placed',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-      paymentMethod: arguments[0]?.paymentMethod || 'delivery',
-      paymentRef: arguments[0]?.paymentRef || '',
-      paid: arguments[0]?.paid || false,
-      address: arguments[0]?.address || '', // save address
-      phone: arguments[0]?.phone || ''      // save phone
     });
 
     return { orderId: orderRef.id };
@@ -136,7 +129,7 @@ export const placeOrder = async ({ customerId, items, total }) => {
 
   // AFTER the transaction: clear cart in a separate batch (no reads after writes in tx)
   try {
-    const cartCol = collection(db, 'users', customerId, 'cart');
+    const cartCol = collection(db, 'users', orderData.customerId, 'cart');
     const cartSnap = await getDocs(cartCol);
     if (!cartSnap.empty) {
       const batch = writeBatch(db);

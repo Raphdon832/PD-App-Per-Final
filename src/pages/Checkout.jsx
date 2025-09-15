@@ -90,6 +90,15 @@ export default function Checkout() {
       <div className="max-w-md mx-auto mt-12 p-6 bg-white rounded shadow">
         <h2 className="text-xl font-bold mb-2">Order Placed!</h2>
         <p className="mb-4">Your order has been placed successfully. Order ID: <span className="font-mono">{success}</span></p>
+        {paymentMethod === 'transfer' ? (
+          <div className="mb-4 text-orange-700 font-medium">
+            Payment not yet confirmed. You will be notified when the pharmacy confirms your payment.
+          </div>
+        ) : (
+          <div className="mb-4 text-orange-700 font-medium">
+            Order is pending.
+          </div>
+        )}
         <button className="px-4 py-2 bg-brand-primary text-white rounded" onClick={() => navigate('/')}>Go to Home</button>
       </div>
     );
