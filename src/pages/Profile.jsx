@@ -1,3 +1,4 @@
+import { Dialog } from '@headlessui/react';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
@@ -7,9 +8,11 @@ import { ensureItemNames } from '@/lib/orders-view';
 import FloatingMessageButton from '@/components/FloatingMessageButton';
 
 export default function Profile() {
-  const { user, logout } = useAuth();
+  const { user, logout, profile } = useAuth();
   const [orders, setOrders] = useState([]);
   const [showAllOrders, setShowAllOrders] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -52,6 +55,12 @@ export default function Profile() {
             </div>
             <div className="text-xl font-bold text-brand-primary mb-1">{user.displayName || user.email}</div>
             <div className="text-sm text-zinc-500 mb-2">{user.email}</div>
+            {(profile?.address || profile?.phone) && (
+              <div className="text-sm text-zinc-700 mb-2 text-center">
+                {profile?.address && (<><b>Address:</b> {profile.address}<br/></>)}
+                {profile?.phone && (<><b>Phone:</b> {profile.phone}</>)}
+              </div>
+            )}
           </div>
           <button
             onClick={async () => { await logout(); window.location.href = '/auth/landing'; }}
@@ -97,11 +106,55 @@ export default function Profile() {
                 <div className="mt-1 text-xs font-medium text-brand-accent">
                   {order.status ? order.status : 'Processing'}
                 </div>
+                <div className="mt-1 text-xs">
+                  <b>Payment:</b> {order.paymentMethod || 'N/A'} | <b>Status:</b> {order.paymentMethod === 'Transfer' ? (order.paid ? 'Payment confirmed' : 'Payment not confirmed') : (order.paid ? 'Paid' : 'Unpaid')}
+                </div>
+                <button
+                  className="mt-2 self-end text-xs text-brand-primary underline"
+                  onClick={() => { setSelectedOrder(order); setDetailsOpen(true); }}
+                >
+                  View Details
+                </button>
               </div>
             ))}
           </div>
         </div>
-        
+
+        {/* Order Details Modal */}
+        <Dialog open={detailsOpen} onClose={() => setDetailsOpen(false)} className="fixed z-50 inset-0 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4">
+            <div className="fixed inset-0 bg-black opacity-30" aria-hidden="true" />
+            <div className="relative bg-white rounded-2xl max-w-md w-full mx-auto p-6 z-10">
+              <Dialog.Title className="text-lg font-bold mb-2">Order Details</Dialog.Title>
+              {selectedOrder && (
+                <div className="space-y-2">
+                  <div><b>Order ID:</b> {selectedOrder.id}</div>
+                  <div><b>Date:</b> {selectedOrder.createdAt ? (selectedOrder.createdAt.toDate ? selectedOrder.createdAt.toDate().toLocaleString() : new Date(selectedOrder.createdAt.seconds*1000).toLocaleString()) : ''}</div>
+                  <div><b>Status:</b> {selectedOrder.status || 'Processing'}</div>
+                  <div><b>Payment Method:</b> {selectedOrder.paymentMethod || 'N/A'}</div>
+                  <div><b>Payment Status:</b> {selectedOrder.paymentMethod === 'Transfer' ? (selectedOrder.paid ? 'Payment confirmed' : 'Payment not confirmed') : (selectedOrder.paid ? 'Paid' : 'Unpaid')}</div>
+                  <div><b>Payment Reference:</b> {selectedOrder.paymentReference || 'N/A'}</div>
+                  <div><b>Delivery Address:</b> {selectedOrder.address || 'N/A'}</div>
+                  <div><b>Phone:</b> {selectedOrder.phone || 'N/A'}</div>
+                  <div><b>Items:</b>
+                    <ul className="list-disc ml-5">
+                      {selectedOrder.items?.map((it, idx) => (
+                        <li key={idx}>{it.name || '(unknown)'} x {it.quantity}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+              <button
+                className="mt-4 w-full rounded-lg bg-brand-primary text-white py-2 font-semibold hover:bg-brand-primary/90"
+                onClick={() => setDetailsOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </Dialog>
+
       </div>
     </div>
   );
