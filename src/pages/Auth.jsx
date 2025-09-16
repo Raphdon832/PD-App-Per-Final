@@ -12,6 +12,7 @@ export default function AuthPage() {
   const [displayName, setDisplayName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
+  const [isPharmacy, setIsPharmacy] = useState(false);
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
 
@@ -50,11 +51,17 @@ export default function AuthPage() {
         <Input type="password" placeholder="Password" value={password} onChange={(e)=>setPassword(e.target.value)} className="mb-4" />
 
         <Button disabled={busy} className="w-full bg-brand-primary text-white hover:bg-brand-primary/90 rounded-[7px]">{busy?'Please wait…':(mode==='signin'?'Sign in':'Sign up')}</Button>
+        {mode==='signup' && (
+          <div className="flex items-center justify-center mt-4 mb-3">
+            <input id="isPharmacy" type="checkbox" checked={isPharmacy} onChange={(e)=>setIsPharmacy(e.target.checked)} className="h-4 w-4 text-brand-primary border-zinc-300 rounded" />
+            <label htmlFor="isPharmacy" className="ml-2 text-sm text-black">I'm a Pharmacy</label>
+          </div>
+        )}
         <div className="mt-4 text-sm text-center">
           {mode==='signin'? (
-            <>No account? <button type="button" className="text-brand-accent" onClick={()=>setMode('signup')}>Create one</button></>
+            <>No account? <button type="button" className="text-sky-500" onClick={()=>setMode('signup')}>Create one</button></>
           ): (
-            <>Have an account? <button type="button" className="text-brand-accent" onClick={()=>setMode('signin')}>Sign in</button></>
+            <>Have an account? <button type="button" className="text-sky-500" onClick={()=>setMode('signin')}>Sign in</button></>
           )}
         </div>
         <div className="text-[10px] mt-10 text-center text-gray-400">Powered by Economic and Business Strategies (EBS)</div>

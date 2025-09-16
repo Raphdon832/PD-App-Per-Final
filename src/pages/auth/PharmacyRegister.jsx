@@ -79,6 +79,10 @@ return (
       <input className="w-full mb-4 px-4 py-2 border-b border-zinc-300 bg-transparent font-thin text-[13px] sm:text-[14px] md:text-[16px] lg:text-[18px] font-poppins placeholder:text-left focus:outline-none focus:border-[#36A5FF]" placeholder="Address" value={form.address} onChange={handleAddressChange} />
       {/* Address suggestions dropdown remains unchanged */}
       <input type="password" className="w-full mb-4 px-4 py-2 border-b border-zinc-300 bg-transparent font-thin text-[13px] sm:text-[14px] md:text-[16px] lg:text-[18px] font-poppins placeholder:text-left focus:outline-none focus:border-[#36A5FF]" placeholder="Choose a password" value={form.password} onChange={e=>setForm({...form,password:e.target.value})} />
+      <div className="flex items-center mb-3">
+        <input id="isPharmacyPharmacy" type="checkbox" className="h-4 w-4 text-brand-primary border-zinc-300 rounded" />
+        <label htmlFor="isPharmacyPharmacy" className="ml-2 text-sm text-black">I'm a Pharmacy</label>
+      </div>
       <div className="flex justify-center w-full">
         <button disabled={busy} className="w-full sm:w-[359px] h-[47px] rounded-full border font-poppins text-[14px] sm:text-[16px] lg:text-[18px] font-light border-[#36A5FF] text-[#36A5FF] bg-white mt-4 flex items-center justify-center">{busy?'Registering…':'Register'}</button>
       </div>

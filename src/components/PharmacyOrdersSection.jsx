@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { processOrderAndReserveStock, updateOrderPaid, updateOrderStatus } from '@/lib/orders';
 import { collection, query, getDocs, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -55,12 +55,14 @@ function ordersToXLSX(orders) {
   return XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
 }
 
-export default function PharmacyOrdersSection() {
+export default function PharmacyOrdersSection({ onOrdersChange, onNewOrder }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+
+  const initialSnapshot = useRef(true);
 
   useEffect(() => {
     // Subscribe to orders in real-time. Filter by pharmacyId so updates propagate immediately.
@@ -75,7 +77,20 @@ export default function PharmacyOrdersSection() {
             const data = d.data();
             return { id: d.id, ...data, items: Array.isArray(data.items) ? data.items : [] };
           });
+          // Notify parent of new orders (skip initial snapshot)
+          if (initialSnapshot.current) {
+            initialSnapshot.current = false;
+          } else {
+            const added = snap.docChanges().filter(ch => ch.type === 'added');
+            if (added.length > 0 && typeof onNewOrder === 'function') {
+              const doc = added[added.length - 1].doc;
+              try { onNewOrder({ id: doc.id, ...doc.data() }); } catch (err) { console.error('onNewOrder callback error', err); }
+            }
+          }
           setOrders(ordersData);
+          if (typeof onOrdersChange === 'function') {
+            try { onOrdersChange(ordersData.length); } catch (err) { console.error('onOrdersChange callback error', err); }
+          }
           setLoading(false);
         }, (err) => {
           console.error('orders onSnapshot error:', err);
@@ -91,6 +106,9 @@ export default function PharmacyOrdersSection() {
             return { id: d.id, ...data, items: Array.isArray(data.items) ? data.items : [] };
           });
           setOrders(ordersData);
+          if (typeof onOrdersChange === 'function') {
+            try { onOrdersChange(ordersData.length); } catch (err) { console.error('onOrdersChange callback error', err); }
+          }
           setLoading(false);
         }, (err) => {
           console.error('orders fallback onSnapshot error:', err);
