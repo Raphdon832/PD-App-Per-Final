@@ -84,12 +84,12 @@ export default function Cart() {
               className="absolute top-2 right-2 z-10 p-1 rounded-full hover:bg-brand-accent/10 transition"
               aria-label="Remove"
             >
-              <DeleteIcon className="w-5 h-5 text-brand-accent" />
+              <DeleteIcon className="w-5 h-5 text-brand-primary" />
             </button>
             <img src={i.product?.image} className="h-14 w-14 object-cover rounded-xl border border-brand-primary/10 bg-brand-primary/5"/>
             <div className="flex-1 min-w-0">
               <div className="font-semibold text-[13px] sm:text-[14px] md:text-[15px] lg:text-[16px] truncate text-brand-primary font-poppins">{i.product?.name}</div>
-              <div className="text-brand-accent text-[11px] sm:text-[12px] md:text-[13px] lg:text-[14px] font-poppins">₦{Number(i.product?.price||0).toLocaleString()}</div>
+              <div className="text-brand-primary text-[11px] sm:text-[12px] md:text-[13px] lg:text-[14px] font-poppins">₦{Number(i.product?.price||0).toLocaleString()}</div>
               {/* Quantity selector */}
               <div className="flex items-center gap-2 mt-2">
                 <button
@@ -126,10 +126,10 @@ export default function Cart() {
         {harmonizedItems.length===0 && <div className="text-brand-primary/40 font-extralight text-[15px] sm:text-[16px] md:text-[18px] lg:text-[20px] font-poppins text-center">Your cart is empty.</div>}
       </div>
       {harmonizedItems.length>0 && (
-        <div className="mt-6 rounded-2xl border border-brand-accent bg-brand-accent/5 p-4 shadow-sm">
+        <div className="mt-6 rounded-2xl border border-brand-primary bg-brand-accent/5 p-4 shadow-sm">
           <div className="flex flex-col sm:flex-row items-center justify-between text-[15px] sm:text-[17px] md:text-[20px] lg:text-[24px] font-poppins">
             <span className="text-brand-primary font-semibold">Total</span>
-            <span className="font-bold text-brand-accent text-[15px] sm:text-[18px]">₦{Number(total).toLocaleString()}</span>
+            <span className="font-bold text-brand-primary text-[15px] sm:text-[18px]">₦{Number(total).toLocaleString()}</span>
           </div>
           <button onClick={checkout} className="mt-4 w-full rounded-full border-none bg-brand-primary text-white py-3 text-[15px] sm:text-[17px] lg:text-[19px] font-semibold font-poppins shadow hover:bg-brand-primary/90 transition">Proceed to Checkout</button>
         </div>
