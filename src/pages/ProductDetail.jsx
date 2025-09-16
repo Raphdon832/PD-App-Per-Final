@@ -79,7 +79,7 @@ export default function ProductDetail({ product, pharmacy }) {
           {/* Title & price */}
           <div className="flex items-start justify-between">
             <h1 className="text-[22px] leading-none font-poppins font-bold tracking-tight text-brand-primary">{product.name}</h1>
-            <div className="text-[19px] font-poppins font-semibold text-brand-accent">₦{price.toLocaleString()}</div>
+            <div className="text-[19px] font-poppins font-semibold text-brand-primary">₦{price.toLocaleString()}</div>
           </div>
 
           {/* Description */}
@@ -108,7 +108,7 @@ export default function ProductDetail({ product, pharmacy }) {
             </button>
             <a
               href={pharmacyPhone ? `tel:${pharmacyPhone}` : undefined}
-              className="flex-1 h-[30px] rounded-[7px] border border-brand-accent text-brand-accent text-[13px] font-poppins font-semibold flex items-center justify-center gap-2 bg-white active:scale-95 hover:bg-brand-accent/10 transition"
+              className="flex-1 h-[30px] rounded-[7px] border border-brand-primary text-brand-primary text-[13px] font-poppins font-semibold flex items-center justify-center gap-2 bg-white active:scale-95 hover:bg-brand-accent/10 transition"
               disabled={!pharmacyPhone}
               style={!pharmacyPhone ? { pointerEvents: 'none', opacity: 0.5 } : {}}
             >
