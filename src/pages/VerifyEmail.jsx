@@ -2,15 +2,18 @@ import { useAuth } from '@/lib/auth';
 import { useEffect, useState } from 'react';
 import { sendVerification } from '@/lib/email';
 import BackButton from './auth/BackButton';
+import { useNavigate } from 'react-router-dom';
 
 export default function VerifyEmail() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [resent, setResent] = useState(false);
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
-    if (user && !user.emailVerified) {
-      // Optionally, could auto-send on mount
+    if (user && user.emailVerified) {
+      // If email is verified, redirect back to auth page
+      navigate('/auth');
     }
   }, [user]);
 
