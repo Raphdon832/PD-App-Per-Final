@@ -25,7 +25,8 @@ export default function AuthPage() {
         await signIn(email, password);
         navigate('/');
       } else {
-        await signUp({ email, password, displayName, phone, address });
+        const role = isPharmacy ? 'pharmacy' : 'customer';
+        await signUp({ email, password, displayName, phone, address, role });
         navigate('/');
       }
     } catch (e) {
