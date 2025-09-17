@@ -3,6 +3,7 @@ import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useNavigate, Link } from 'react-router-dom';
+import BackButton from './auth/BackButton';
 
 export default function AuthPage() {
   const { signIn, signUp } = useAuth();
@@ -39,6 +40,9 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen grid place-items-center px-5">
       <form onSubmit={submit} className="w-full max-w-sm rounded-3xl border border-zinc-200 p-6">
+        <div className="flex mb-3">
+          <BackButton to="/auth/landing" />
+        </div>
         <div className="text-2xl font-semibold mb-2 text-brand-primary">{mode==='signin'?'Welcome back':'Create your account'}</div>
         <div className="text-zinc-500 mb-4">Sign in to {mode==='signin' ? 'your account' : 'get started with us'}.</div>
 

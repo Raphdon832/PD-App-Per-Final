@@ -33,15 +33,13 @@ export default function VerifyEmail() {
     } catch (e) {
       // ignore
     }
-    navigate('/auth/landing');
+    navigate('/auth');
   };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-white">
       <div className="bg-white p-8 max-w-md w-full text-center">
-        <div className="flex mt-1 justify-start">
-          <BackButton to="/auth" />
-        </div>
+        
         <h2 className="text-xl font-normal mt-5 mb-2">Verify your email</h2>
         <p className="mb-4 text-zinc-600 text-[14px] font-normal">A verification link has been sent to <b>{user.email}</b>.<br />Please check your inbox and click the link to activate your account.</p>
         <button
@@ -52,7 +50,7 @@ export default function VerifyEmail() {
         <button
           className="block mt-4 mx-auto text-sm text-zinc-500 underline"
           onClick={handleLogout}
-        >Log out</button>
+        >Back</button>
       </div>
     </div>
   );
