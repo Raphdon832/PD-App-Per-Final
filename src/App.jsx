@@ -131,6 +131,12 @@ function Shell() {
   const params = new URLSearchParams(location.search);
   const scrollTo = params.get('scrollTo') ? parseInt(params.get('scrollTo'), 10) : undefined;
 
+  // If user is not logged in, force them to the auth landing page unless they're already visiting an /auth route
+  if (!user && !location.pathname.startsWith('/auth')) {
+    console.log('Unauthenticated — redirecting to /auth/landing');
+    return <Navigate to="/auth/landing" replace />;
+  }
+
   // Show loading until profile is loaded
   if (user && profile === undefined) {
     console.log('Loading profile...');
