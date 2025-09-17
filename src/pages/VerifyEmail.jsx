@@ -15,7 +15,7 @@ export default function VerifyEmail() {
       // If email is verified, redirect back to auth page
       navigate('/auth');
     }
-  }, [user]);
+  }, [user, navigate]);
 
   if (!user) return null;
   if (user.emailVerified) return null;
@@ -25,6 +25,15 @@ export default function VerifyEmail() {
     await sendVerification(user);
     setResent(true);
     setSending(false);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (e) {
+      // ignore
+    }
+    navigate('/auth/landing');
   };
 
   return (
@@ -42,7 +51,7 @@ export default function VerifyEmail() {
         >{resent ? 'Verification Sent!' : sending ? 'Sending...' : 'Resend Email'}</button>
         <button
           className="block mt-4 mx-auto text-sm text-zinc-500 underline"
-          onClick={logout}
+          onClick={handleLogout}
         >Log out</button>
       </div>
     </div>
