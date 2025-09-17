@@ -14,6 +14,7 @@ export default function AuthPage() {
   const [address, setAddress] = useState('');
   const [isPharmacy, setIsPharmacy] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const submit = async (e) => {
@@ -48,7 +49,13 @@ export default function AuthPage() {
           </>
         )}
         <Input type="email" placeholder="Email" value={email} onChange={(e)=>setEmail(e.target.value)} className="mb-3" />
-        <Input type="password" placeholder="Password" value={password} onChange={(e)=>setPassword(e.target.value)} className="mb-4" />
+
+        <div className="relative mb-4">
+          <Input type={showPassword ? 'text' : 'password'} placeholder="Password" value={password} onChange={(e)=>setPassword(e.target.value)} className="w-full" />
+          <button type="button" onClick={()=>setShowPassword(s=>!s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-sky-600 text-sm">
+            {showPassword ? 'Hide' : 'Show'}
+          </button>
+        </div>
 
         <Button disabled={busy} className="w-full bg-brand-primary text-white hover:bg-brand-primary/90 rounded-[7px]">{busy?'Please wait…':(mode==='signin'?'Sign in':'Sign up')}</Button>
         {mode==='signup' && (

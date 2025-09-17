@@ -27,7 +27,7 @@ export function AuthProvider({ children }) {
           setProfile(snap.data());
         } else {
           // Optionally, create the user doc if missing
-          const userData = { uid: u.uid, email: u.email, displayName: u.displayName };
+          const userData = { uid: u.uid, email: u.email, displayName: u.displayName, role: 'customer' };
           await setDoc(ref, userData);
           setProfile(userData);
         }
@@ -40,10 +40,12 @@ export function AuthProvider({ children }) {
 
   const signIn = (email, password) => signInWithEmailAndPassword(auth, email, password);
 
-  const signUp = async ({ email, password, displayName, address, lat, lon, phone }) => {
+  const signUp = async ({ email, password, displayName, address, lat, lon, phone, role }) => {
+    // default role to 'customer' when not provided
+    const assignedRole = role || 'customer';
     const { user } = await createUserWithEmailAndPassword(auth, email, password);
     if (displayName) await updateProfile(user, { displayName });
-    const userData = { uid: user.uid, email, displayName };
+    const userData = { uid: user.uid, email, displayName, role: assignedRole };
     if (address) userData.address = address;
     if (lat) userData.lat = lat;
     if (lon) userData.lon = lon;
