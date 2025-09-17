@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 export default function AuthPage() {
   const { signIn, signUp } = useAuth();
@@ -57,6 +57,8 @@ export default function AuthPage() {
           </button>
         </div>
 
+       
+
         <Button disabled={busy} className="w-full bg-brand-primary text-white hover:bg-brand-primary/90 rounded-[7px]">{busy?'Please wait…':(mode==='signin'?'Sign in':'Sign up')}</Button>
         {mode==='signup' && (
           <div className="flex items-center justify-center mt-4 mb-3">
@@ -64,6 +66,13 @@ export default function AuthPage() {
             <label htmlFor="isPharmacy" className="ml-2 text-sm text-black">I'm a Pharmacy</label>
           </div>
         )}
+
+         {mode === 'signin' && (
+          <div className="text-center mt-4">
+            <Link to="/auth/forgot-password" className="text-sky-500 text-sm font-medium">Forgot password?</Link>
+          </div>
+        )}
+
         <div className="mt-4 text-sm text-center">
           {mode==='signin'? (
             <>No account? <button type="button" className="text-sky-500" onClick={()=>setMode('signup')}>Create one</button></>

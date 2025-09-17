@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { sendReset } from '@/lib/email';
+import BackButton from './BackButton';
 //import ForgotPasswordIllustration from '@/icons/illustrations/ForgotPasswordIllustration.png'; // <-- adjust name if different
 
 export default function ForgotPassword() {
@@ -24,6 +25,9 @@ export default function ForgotPassword() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-5">
       <div className="w-full max-w-md text-center bg-white rounded-2xl  p-8">
+        <div className="flex justify-start mb-4 border-none font-normal rounded-[7px]">
+          <BackButton to="/auth" />
+        </div>
         {/* Illustration above heading */}
         <img
           src="/ForgotPasswordIllustration.png"
@@ -31,10 +35,10 @@ export default function ForgotPassword() {
           className="mx-auto mb-4 w-28 h-28 object-contain"
         />
 
-        <h2 className="text-xl font-light mb-4">Forgot Password?</h2>
+        <h2 className="text-xl font-normal mb-4">Forgot Password?</h2>
 
         {sent ? (
-          <p className="text-green-600 font-thin text-[14px]">
+          <p className="text-black font-normal text-[14px]">
             A password reset link has been sent to your email.
           </p>
         ) : (
@@ -53,7 +57,7 @@ export default function ForgotPassword() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-full bg-sky-600 text-white text-[13px] font-light py-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full rounded-[7px] bg-black text-white text-[13px] font-normal py-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading && (
                 <span className="inline-block h-4 w-4 border-2 border-white/70 border-t-transparent rounded-full animate-spin" />

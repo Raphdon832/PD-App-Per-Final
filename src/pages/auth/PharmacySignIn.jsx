@@ -12,6 +12,7 @@ const { signIn } = useAuth();
 const [form, setForm] = useState({ email:'', password:'' });
 const [busy, setBusy] = useState(false);
 const [error, setError] = useState(null);
+const [showPassword, setShowPassword] = useState(false);
 const navigate = useNavigate();
 
 
@@ -38,7 +39,10 @@ return (
 <div className="font-poppins text-[32px] sm:text-[42px] md:text-[54px] lg:text-[64px] font-thin tracking-tight leading-[109%] text-left">I'm a<br/>Pharmacy</div>
 <form onSubmit={submit} className="mt-8 w-full max-w-md md:max-w-xl lg:max-w-2xl mx-auto font-poppins">
 <input type="email" className="w-full mb-4 px-4 py-2 border-b border-zinc-300 bg-transparent font-thin text-[13px] sm:text-[14px] md:text-[16px] lg:text-[18px] font-poppins placeholder:text-left focus:outline-none focus:border-[#36A5FF]" placeholder="Email Address" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} />
-<input type="password" className="w-full mb-4 px-4 py-2 border-b border-zinc-300 bg-transparent font-thin text-[13px] sm:text-[14px] md:text-[16px] lg:text-[18px] font-poppins placeholder:text-left focus:outline-none focus:border-[#36A5FF]" placeholder="Password" value={form.password} onChange={e=>setForm({...form,password:e.target.value})} />
+<div className="relative mb-4">
+  <input type={showPassword ? 'text' : 'password'} className="w-full px-4 py-2 border-b border-zinc-300 bg-transparent font-thin text-[13px] sm:text-[14px] md:text-[16px] lg:text-[18px] font-poppins placeholder:text-left focus:outline-none focus:border-[#36A5FF]" placeholder="Password" value={form.password} onChange={e=>setForm({...form,password:e.target.value})} />
+  <button type="button" onClick={()=>setShowPassword(s=>!s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-sky-600 text-sm">{showPassword? 'Hide':'Show'}</button>
+</div>
 <div className="flex justify-center w-full">
 <button disabled={busy} className="w-full sm:w-[359px] h-[47px] rounded-full border font-poppins text-[14px] sm:text-[16px] lg:text-[18px] font-light border-[#36A5FF] text-[#36A5FF] bg-white mt-4 flex items-center justify-center">{busy?'Signing in…':'Sign In'}</button>
 </div>
