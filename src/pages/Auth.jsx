@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import BackButton from './auth/BackButton';
 
 export default function AuthPage() {
   const { signIn, signUp } = useAuth();
+  const location = useLocation();
   const [mode, setMode] = useState('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

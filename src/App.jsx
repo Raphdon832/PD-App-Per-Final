@@ -143,17 +143,6 @@ function Shell() {
     return <LoadingSkeleton lines={4} className="my-8" />;
   }
 
-  // Block unverified users
-  if (user && !user.emailVerified) {
-    console.log('User not verified, redirecting to /verify-email');
-    return (
-      <Routes>
-        <Route path="/verify-email" element={<VerifyEmail />} />
-        <Route path="*" element={<Navigate to="/verify-email" replace />} />
-      </Routes>
-    );
-  }
-
   // Redirect superuser to /superuser ONLY if on root path
   if (profile && profile.role === 'superuser' && location.pathname === '/') {
     console.log('Superuser detected, redirecting to /superuser');
@@ -168,7 +157,6 @@ function Shell() {
         <Route path="/auth/landing" element={<Landing />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/auth/forgot-password" element={<ForgotPassword />} />
-        <Route path="/verify-email" element={<VerifyEmail />} />
       </Route>
       {/* Superuser route - only for superuser role, uses BareLayout (no BottomNav) */}
       <Route element={<BareLayout />}>
