@@ -55,6 +55,8 @@ export default function Checkout() {
       setError('Your cart is empty.');
       return;
     }
+    // ensure a payment method is selected by default when opening the modal
+    if (!paymentMethod) setPaymentMethod('delivery');
     setShowPaymentModal(true);
   };
 
@@ -173,11 +175,11 @@ export default function Checkout() {
             <Dialog.Title className="text-lg font-bold mb-2">Choose Payment Method</Dialog.Title>
             <div className="mb-4">
               <label className="flex items-center gap-2 mb-2">
-                <input type="radio" name="paymethod" value="delivery" checked={paymentMethod==='delivery'} onChange={()=>setPaymentMethod('delivery')} />
+                <input type="radio" name="paymethod" value="delivery" checked={paymentMethod==='delivery'} onChange={(e)=>setPaymentMethod(e.target.value)} />
                 Pay on Delivery
               </label>
               <label className="flex items-center gap-2">
-                <input type="radio" name="paymethod" value="transfer" checked={paymentMethod==='transfer'} onChange={()=>setPaymentMethod('transfer')} />
+                <input type="radio" name="paymethod" value="transfer" checked={paymentMethod==='transfer'} onChange={(e)=>setPaymentMethod(e.target.value)} />
                 Online Transfer
               </label>
             </div>
