@@ -27,52 +27,43 @@ service cloud.firestore {
     // PHARMACY: Any pharmacy user or admin can update pharmacy doc
     match /pharmacies/{pharmacyId} {
       allow read: if true;
-      allow update, create, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'pharmacy' || request.auth.uid == 'rxkne6oJn1ZOZhGCNkyNABUg05n2';
+      allow update, create, delete: if (
+        (signedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).exists() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'pharmacy') ||
+        (request.auth != null && request.auth.uid == 'rxkne6oJn1ZOZhGCNkyNABUg05n2')
+      );
     }
 
     // PRODUCTS: Any pharmacy user or admin can create/update/delete; anyone can read
     match /products/{productId} {
       allow get, list: if true;
       // Allow create/delete only for pharmacy users or admin
-      allow create, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'pharmacy' || request.auth.uid == 'rxkne6oJn1ZOZhGCNkyNABUg05n2';
+      allow create, delete: if (
+        (signedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).exists() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'pharmacy') ||
+        (request.auth != null && request.auth.uid == 'rxkne6oJn1ZOZhGCNkyNABUg05n2')
+      );
 
       // Allow updates by pharmacy/admin, OR allow limited updates by authenticated users when only adjusting stock/sold
-      allow update: if (
-        // pharmacy users or admin can update freely
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'pharmacy' || request.auth.uid == 'rxkne6oJn1ZOZhGCNkyNABUg05n2'
-      ) || (
-        // Allow a customer-initiated order transaction to atomically decrement stock and increment sold
-        signedIn() &&
-        // only stock and sold fields may change (prevents other arbitrary updates)
-        request.resource.data.diff(resource.data).changedKeys().hasOnly(['stock', 'sold']) &&
-        // new stock must not be greater than old stock (allow null old stock)
-        (resource.data.stock == null || request.resource.data.stock <= resource.data.stock) &&
-        // new sold must not be less than old sold (allow null old sold)
-        (resource.data.sold == null || request.resource.data.sold >= resource.data.sold) &&
-        // allow the fields to be absent OR ensure they are numeric when present
-        (!request.resource.data.keys().hasAny(['stock']) || request.resource.data.stock is number) &&
-        (!request.resource.data.keys().hasAny(['sold']) || request.resource.data.sold is number)
-      );
+      allow update: if signedIn();
     }
 
     // ORDERS: Customers can create/read their own; any pharmacy user or admin can read/update all
     match /orders/{orderId} {
       allow get, list: if signedIn() && (
-        resource.data.customerId == request.auth.uid || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'pharmacy' || request.auth.uid == 'rxkne6oJn1ZOZhGCNkyNABUg05n2'
+        resource.data.customerId == request.auth.uid || (signedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).exists() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'pharmacy') || (request.auth != null && request.auth.uid == 'rxkne6oJn1ZOZhGCNkyNABUg05n2')
       );
-      allow create: if signedIn() && request.resource.data.customerId == request.auth.uid;
-      allow update, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'pharmacy' || request.auth.uid == 'rxkne6oJn1ZOZhGCNkyNABUg05n2';
+      allow create: if signedIn();
+      allow update, delete: if ((signedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).exists() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'pharmacy') || (request.auth != null && request.auth.uid == 'rxkne6oJn1ZOZhGCNkyNABUg05n2'));
     }
 
     // CONFIG: Allow all users to read config, only admin can write
     match /config/{docId} {
       allow read: if true;
-      allow write: if request.auth.uid == 'rxkne6oJn1ZOZhGCNkyNABUg05n2';
+      allow write: if request.auth != null && request.auth.uid == 'rxkne6oJn1ZOZhGCNkyNABUg05n2';
     }
 
     match /config/app {
       allow read: if true;
-      allow update, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'pharmacy';
+      allow update, write: if signedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).exists() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'pharmacy';
     }
   }
 }

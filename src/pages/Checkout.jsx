@@ -57,45 +57,51 @@ export default function Checkout() {
     }
     // ensure a payment method is selected by default when opening the modal
     if (!paymentMethod) setPaymentMethod('delivery');
+    // clear any previous paymentRef when switching methods
+    if (paymentMethod !== 'transfer') setPaymentRef('');
     setShowPaymentModal(true);
   };
 
   const handleConfirmPayment = async () => {
     setPlacing(true);
+    setError('');
     try {
       if (profile?.address !== address || profile?.phone !== phone) {
         await updateDoc(doc(db, 'users', user.uid), { address, phone });
       }
-      // Try to resolve the single pharmacy id so orders are tagged correctly
+      // Resolve pharmacyId (best-effort)
       let pharmacyId;
       try {
         pharmacyId = await getPharmacyId();
       } catch (err) {
         console.warn('Could not resolve pharmacyId while placing order:', err);
-        pharmacyId = undefined; // fallback: still place order but dashboard won't pick it up until fixed
+        pharmacyId = undefined;
       }
 
-      const items = cart.map(item => ({ productId: item.id, quantity: item.qty || 1 }));
+      const items = cart.map(item => ({ productId: item.id || item.productId, quantity: item.qty || 1 }));
       const orderData = {
         customerId: user.uid,
         items,
         total,
         paymentMethod,
         paymentRef: paymentMethod === 'transfer' ? paymentRef : '',
-        paid: false, // will be set by pharmacy after confirmation
-        address, // add address
-        phone    // add phone
+        paid: false,
+        address,
+        phone
       };
-      // Only attach pharmacyId if it was successfully resolved
-      if (typeof pharmacyId !== 'undefined') {
-        orderData.pharmacyId = pharmacyId;
-      }
+      if (typeof pharmacyId !== 'undefined') orderData.pharmacyId = pharmacyId;
 
       const result = await placeOrder(orderData);
       setSuccess(result.orderId);
       setShowPaymentModal(false);
     } catch (e) {
-      setError(e.message || 'Failed to place order.');
+      console.error('Place order failed', e);
+      // Firebase permission-denied is common when rules block the transaction
+      if (e?.code === 'permission-denied' || (e?.message && e.message.toLowerCase().includes('permission'))) {
+        setError('Failed to place order: insufficient permissions. Ensure you are signed in and try again. If the problem persists, contact support.');
+      } else {
+        setError(e.message || 'Failed to place order.');
+      }
     } finally {
       setPlacing(false);
     }
@@ -210,7 +216,7 @@ export default function Checkout() {
                 className="flex-1 py-2 rounded bg-brand-primary text-white font-semibold disabled:opacity-60"
                 onClick={handleConfirmPayment}
                 disabled={placing || !paymentMethod}
-              >Confirm & Place Order</button>
+              >{placing ? 'Placing Order…' : 'Confirm & Place Order'}</button>
             </div>
           </div>
         </div>
