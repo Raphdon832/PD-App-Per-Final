@@ -131,14 +131,19 @@ function Shell() {
   const params = new URLSearchParams(location.search);
   const scrollTo = params.get('scrollTo') ? parseInt(params.get('scrollTo'), 10) : undefined;
 
+  // Redirect unauthenticated users to landing page
+  if (!user && location.pathname !== '/auth/landing' && location.pathname !== '/auth' && location.pathname !== '/auth/forgot-password') {
+    return <Navigate to="/auth/landing" replace />;
+  }
+
   // Show loading until profile is loaded
   if (user && profile === undefined) {
     console.log('Loading profile...');
     return <LoadingSkeleton lines={4} className="my-8" />;
   }
 
-  // Block unverified users
-  if (user && !user.emailVerified) {
+  // Block unverified users BUT allow them to navigate to auth pages
+  if (user && !user.emailVerified && !location.pathname.startsWith('/auth')) {
     console.log('User not verified, redirecting to /verify-email');
     return (
       <Routes>
