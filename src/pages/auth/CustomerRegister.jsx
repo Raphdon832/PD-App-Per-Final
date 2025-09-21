@@ -11,7 +11,6 @@ export default function CustomerRegister(){
 const { signUp } = useAuth();
 const [form, setForm] = useState({ name:'', email:'', phone:'', password:'', address: '' });
 const [busy, setBusy] = useState(false);
-const [showPassword, setShowPassword] = useState(false);
 const [success, setSuccess] = useState(null);
 const [addressSuggestions, setAddressSuggestions] = useState([]);
 const [selectedAddress, setSelectedAddress] = useState(null);
@@ -88,16 +87,7 @@ return (
           </div>
         )}
       </div>
-      <div className="relative mb-4">
-        <input
-          type={showPassword ? 'text' : 'password'}
-          className="w-full px-4 py-2 border-b border-zinc-300 bg-transparent font-thin text-[13px] sm:text-[14px] md:text-[16px] lg:text-[18px] font-poppins placeholder:text-left focus:outline-none focus:border-[#36A5FF]"
-          placeholder="Choose a password"
-          value={form.password}
-          onChange={e=>setForm({...form,password:e.target.value})}
-        />
-        <button type="button" onClick={()=>setShowPassword(s=>!s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-sky-600 text-sm">{showPassword ? 'Hide' : 'Show'}</button>
-      </div>
+      <input type="password" className="w-full mb-4 px-4 py-2 border-b border-zinc-300 bg-transparent font-thin text-[13px] sm:text-[14px] md:text-[16px] lg:text-[18px] font-poppins placeholder:text-left focus:outline-none focus:border-[#36A5FF]" placeholder="Choose a password" value={form.password} onChange={e=>setForm({...form,password:e.target.value})} />
       <div className="flex items-center mb-3">
         <input id="isPharmacyCustomer" type="checkbox" className="h-4 w-4 text-brand-primary border-zinc-300 rounded" />
         <label htmlFor="isPharmacyCustomer" className="ml-2 text-sm text-black">I'm a Pharmacy</label>

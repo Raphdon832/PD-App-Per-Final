@@ -15,7 +15,7 @@ return (
     <div className="flex justify-center w-full max-w-[350px] mx-auto">
       <button
         onClick={()=> navigate('/auth')}
-        className="mt-8 w-full h-[47px] rounded-[7px] border font-poppins text-[16px] font-medium border-brand-primary text-brand-primary bg-white hover:bg-brand-primary/10 flex items-center justify-center transition"
+        className="mt-8 w-full h-[47px] rounded-[7px] border font-poppins text-[16px] text-center font-medium border-brand-primary text-brand-primary bg-white hover:bg-brand-primary/10 flex items-center justify-center transition"
       >
         Sign In / Create Account
       </button>

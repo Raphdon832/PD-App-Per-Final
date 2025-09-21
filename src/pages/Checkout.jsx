@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
-import { placeOrder, listenCart, removeFromCart, getPharmacyId } from '@/lib/db';
+import { checkoutAsCustomer } from '@/lib/orders';
+import { listenCart, removeFromCart, getPharmacyId } from '@/lib/db';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
@@ -55,21 +56,16 @@ export default function Checkout() {
       setError('Your cart is empty.');
       return;
     }
-    // ensure a payment method is selected by default when opening the modal
-    if (!paymentMethod) setPaymentMethod('delivery');
-    // clear any previous paymentRef when switching methods
-    if (paymentMethod !== 'transfer') setPaymentRef('');
     setShowPaymentModal(true);
   };
 
   const handleConfirmPayment = async () => {
     setPlacing(true);
-    setError('');
     try {
       if (profile?.address !== address || profile?.phone !== phone) {
         await updateDoc(doc(db, 'users', user.uid), { address, phone });
       }
-      // Resolve pharmacyId (best-effort)
+      
       let pharmacyId;
       try {
         pharmacyId = await getPharmacyId();
@@ -78,30 +74,27 @@ export default function Checkout() {
         pharmacyId = undefined;
       }
 
-      const items = cart.map(item => ({ productId: item.id || item.productId, quantity: item.qty || 1 }));
-      const orderData = {
-        customerId: user.uid,
-        items,
-        total,
-        paymentMethod,
-        paymentRef: paymentMethod === 'transfer' ? paymentRef : '',
-        paid: false,
+      // Prepare cart items for checkoutAsCustomer
+      const cartItems = cart.map(item => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        imageUrl: item.imageUrl,
+        qty: item.qty || 1
+      }));
+      
+      const result = await checkoutAsCustomer({
+        user,
+        pharmacyId,
+        cartItems,
         address,
         phone
-      };
-      if (typeof pharmacyId !== 'undefined') orderData.pharmacyId = pharmacyId;
+      });
 
-      const result = await placeOrder(orderData);
       setSuccess(result.orderId);
       setShowPaymentModal(false);
     } catch (e) {
-      console.error('Place order failed', e);
-      // Firebase permission-denied is common when rules block the transaction
-      if (e?.code === 'permission-denied' || (e?.message && e.message.toLowerCase().includes('permission'))) {
-        setError('Failed to place order: insufficient permissions. Ensure you are signed in and try again. If the problem persists, contact support.');
-      } else {
-        setError(e.message || 'Failed to place order.');
-      }
+      setError(e.message || 'Failed to place order.');
     } finally {
       setPlacing(false);
     }
@@ -181,11 +174,11 @@ export default function Checkout() {
             <Dialog.Title className="text-lg font-bold mb-2">Choose Payment Method</Dialog.Title>
             <div className="mb-4">
               <label className="flex items-center gap-2 mb-2">
-                <input type="radio" name="paymethod" value="delivery" checked={paymentMethod==='delivery'} onChange={(e)=>setPaymentMethod(e.target.value)} />
+                <input type="radio" name="paymethod" value="delivery" checked={paymentMethod==='delivery'} onChange={()=>setPaymentMethod('delivery')} />
                 Pay on Delivery
               </label>
               <label className="flex items-center gap-2">
-                <input type="radio" name="paymethod" value="transfer" checked={paymentMethod==='transfer'} onChange={(e)=>setPaymentMethod(e.target.value)} />
+                <input type="radio" name="paymethod" value="transfer" checked={paymentMethod==='transfer'} onChange={()=>setPaymentMethod('transfer')} />
                 Online Transfer
               </label>
             </div>
@@ -216,7 +209,7 @@ export default function Checkout() {
                 className="flex-1 py-2 rounded bg-brand-primary text-white font-semibold disabled:opacity-60"
                 onClick={handleConfirmPayment}
                 disabled={placing || !paymentMethod}
-              >{placing ? 'Placing Order…' : 'Confirm & Place Order'}</button>
+              >Confirm & Place Order</button>
             </div>
           </div>
         </div>

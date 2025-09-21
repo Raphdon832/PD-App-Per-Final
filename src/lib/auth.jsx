@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { auth, db } from './firebase';
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { sendVerification } from './email';
 
 const AuthCtx = createContext();
 export const useAuth = () => useContext(AuthCtx);
@@ -50,7 +51,8 @@ export function AuthProvider({ children }) {
     if (lon) userData.lon = lon;
     if (phone) userData.phone = phone;
     await setDoc(doc(db, 'users', user.uid), userData);
-    return { user, verificationSent: false };
+    await sendVerification(user);
+    return { user, verificationSent: true };
   };
 
   const logout = () => signOut(auth);

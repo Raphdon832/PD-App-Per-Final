@@ -8,7 +8,7 @@ import PharmacyOrdersSection from '@/components/PharmacyOrdersSection';
 import ProfileCompletionModal from '@/components/ProfileCompletionModal';
 import DashboardSearchModal from '@/components/DashboardSearchModal';
 
-import { collection, query, where, getDocs, updateDoc, doc, deleteDoc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, onSnapshot, updateDoc, doc, deleteDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 export default function Dashboard() {
@@ -31,37 +31,23 @@ export default function Dashboard() {
   const [newOrderData, setNewOrderData] = useState(null);
 
   useEffect(() => {
-    async function fetchStats() {
-      setLoading(true);
-      try {
-        if (!profile || profile.role !== 'pharmacy') {
-          setTotalProducts(0);
-          setTotalOrders(0);
-          setProducts([]);
-          setOrders([]);
-          setLoading(false);
-          return;
-        }
-        // Debug: log profile info before queries
-        console.log('Dashboard: profile.uid', profile.uid, 'profile.role', profile.role);
-        // Total products
-        const productsSnap = await getDocs(query(collection(db, 'products'), where('pharmacyId', '==', profile.uid)));
-        setTotalProducts(productsSnap.size);
-        setProducts(productsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-        // Orders: handled by real-time subscription below (keeps totalOrders in sync)
-         setLoading(false);
-       } catch (err) {
-        setLoading(false);
-        setProducts([]);
-        setOrders([]);
-        setTotalProducts(0);
-        setTotalOrders(0);
-        window.dashboardFetchError = err; // For debugging in console
-        // Debug: log error and profile
-        console.error('Dashboard Firestore error:', err, 'profile:', profile);
-      }
-    }
-    fetchStats();
+    if (!profile) return;
+    setLoading(true);
+    console.log('Dashboard: subscribing to products for', profile.uid);
+    const q = query(collection(db, 'products'), where('pharmacyId', '==', profile.uid));
+    const unsub = onSnapshot(q, (snap) => {
+      const prods = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setProducts(prods);
+      setTotalProducts(prods.length);
+      setLoading(false);
+    }, (err) => {
+      console.error('Dashboard onSnapshot error:', err, 'profile:', profile);
+      window.dashboardFetchError = err;
+      setProducts([]);
+      setTotalProducts(0);
+      setLoading(false);
+    });
+    return () => unsub();
   }, [profile]);
 
   useEffect(() => {
@@ -114,18 +100,14 @@ export default function Dashboard() {
   }
 
   // Error fallback for failed Firestore queries
-  if (!profile || (profile.role === 'pharmacy' && products.length === 0 && totalProducts === 0)) {
+  // Only show the error UI when profile is missing or an actual fetch error occurred.
+  const fetchError = typeof window !== 'undefined' ? window.dashboardFetchError : null;
+  if (!profile || fetchError) {
     return (
       <div className="pt-10 pb-28 w-full max-w-md mx-auto px-4 min-h-screen flex flex-col items-center justify-center">
         <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-          {window.dashboardFetchError ? (
-            <>
-              <div className="text-red-600 font-bold text-lg mb-2">Error loading dashboard</div>
-              <div className="text-red-500 text-sm mb-2">{window.dashboardFetchError.message}</div>
-            </>
-          ) : (
-            <div className="text-red-600 font-bold text-lg mb-2">Error loading dashboard</div>
-          )}
+          <div className="text-red-600 font-bold text-lg mb-2">Error loading dashboard</div>
+          {fetchError && <div className="text-red-500 text-sm mb-2">{fetchError.message}</div>}
           <div className="text-zinc-500 text-xs">Check your Firestore rules and ensure your user document has <code>role: 'pharmacy'</code> set.</div>
         </div>
       </div>
@@ -250,48 +232,50 @@ export default function Dashboard() {
             )}
           </div>
           {products.length > 0 && (
-            <button
-              className="mt-4 w-full rounded-[5px] bg-brand-primary text-brand-accent text-[13px] font-semibold py-2 shadow hover:bg-brand-primary/90 transition"
-              onClick={() => {
-                const headers = ['S/N', 'Name', 'Price', 'Description', 'Image', 'Category', 'Stock', 'SKU'];
-                const rows = products.map((p, i) => [
-                  i + 1,
-                  p.name,
-                  p.price,
-                  p.description,
-                  p.image,
-                  p.category,
-                  p.stock,
-                  p.sku
-                ]);
-                const csvLines = [
-                  headers.map(h => `"${String(h).replace(/"/g, '""')}"`).join(','),
-                  ...rows.map(r => r.map(x => `"${String(x ?? '').replace(/"/g, '""')}"`).join(','))
-                ];
-                const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url; a.download = 'pharmacy_inventory.csv'; a.click();
-                URL.revokeObjectURL(url);
-              }}
-            >
-              Download Inventory (CSV)
-            </button>
-          )}
-          {/* Pharmacy Orders Section - placed after Download Inventory button */}
-          <PharmacyOrdersSection
-            pharmacyId={profile?.uid}
-            onOrdersChange={(count) => setTotalOrders(count)}
-            onNewOrder={(order) => { setNewOrderData(order); setNewOrderModalOpen(true); }}
-          />
-          {showEdit && editProduct && (
-            <ProductEditModal
-              product={editProduct}
-              onClose={() => setShowEdit(false)}
-              onSave={handleSave}
-              onDelete={handleDelete}
-            />
-          )}
+            <>
+              <button
+                className="mt-4 w-full rounded-[5px] bg-brand-primary text-brand-accent text-[13px] font-semibold py-2 shadow hover:bg-brand-primary/90 transition"
+                onClick={() => {
+                  const headers = ['S/N', 'Name', 'Price', 'Description', 'Image', 'Category', 'Stock', 'SKU'];
+                  const rows = products.map((p, i) => [
+                    i + 1,
+                    p.name,
+                    p.price,
+                    p.description,
+                    p.image,
+                    p.category,
+                    p.stock,
+                    p.sku
+                  ]);
+                  const csvLines = [
+                    headers.map(h => `"${String(h).replace(/"/g, '""')}"`).join(','),
+                    ...rows.map(r => r.map(x => `"${String(x ?? '').replace(/"/g, '""')}"`).join(','))
+                  ];
+                  const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url; a.download = 'pharmacy_inventory.csv'; a.click();
+                  URL.revokeObjectURL(url);
+                }}
+              >
+                Download Inventory (CSV)
+              </button>
+              {/* Pharmacy Orders Section - placed after Download Inventory button */}
+              <PharmacyOrdersSection
+                pharmacyId={profile?.uid}
+                onOrdersChange={(count) => setTotalOrders(count)}
+                onNewOrder={(order) => { setNewOrderData(order); setNewOrderModalOpen(true); }}
+              />
+              {showEdit && editProduct && (
+                <ProductEditModal
+                  product={editProduct}
+                  onClose={() => setShowEdit(false)}
+                  onSave={handleSave}
+                  onDelete={handleDelete}
+                />
+              )}
+            </>
+           )}
         </div>
         
         {/* Floating Search Button */}

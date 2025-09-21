@@ -101,7 +101,7 @@ export const placeOrder = async (orderData) => {
     // ----- READS (must be before any writes)
     const productSnaps = await Promise.all(productRefs.map(ref => tx.get(ref)));
 
-    // Validate stock and prepare snapshot items
+    // Validate and prepare snapshot items (but don't check stock availability)
     const snapshotItems = [];
     for (let i = 0; i < normalized.length; i++) {
       const it = normalized[i];
@@ -109,10 +109,8 @@ export const placeOrder = async (orderData) => {
       if (!snap.exists()) throw new Error('Product not found: ' + it.productId);
       const p = snap.data();
 
-      const stock = Number(p.stock || 0);
       const qty = Number(it.quantity || 0);
       if (qty <= 0) throw new Error('Invalid quantity for ' + it.productId);
-      if (stock < qty) throw new Error(`Insufficient stock for ${p.name || it.productId}`);
 
       snapshotItems.push({
         productId: productRefs[i].id,
@@ -123,36 +121,28 @@ export const placeOrder = async (orderData) => {
       });
     }
 
-    // 1) decrement stock / increment sold
-    for (let i = 0; i < normalized.length; i++) {
-      const qty = normalized[i].quantity;
-      tx.update(productRefs[i], {
-        stock: increment(-qty),
-        sold: increment(qty)
-      });
-    }
+    // Stock will be decremented later when pharmacy changes order status to "processing"
+    // Do not decrement stock here during customer checkout
 
     // 2) create order
     const orderRef = doc(collection(db, 'orders'));
-    // prepare payload; ensure we don't write undefined values (Firestore rejects undefined)
     const orderPayload = {
-      ...orderData,
+      customerId: orderData.customerId,
+      pharmacyId: orderData.pharmacyId,
+      total: orderData.total,
+      paymentMethod: orderData.paymentMethod,
+      paymentRef: orderData.paymentRef,
+      paid: orderData.paid,
+      address: orderData.address, // preserve delivery address
+      phone: orderData.phone,     // preserve customer phone
       items: snapshotItems,
       status: 'placed',
+      stockProcessed: false, // will be set to true when pharmacy processes the order
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
-    // If pharmacyId is explicitly undefined, try to resolve it from config; if still undefined delete it
-    if (orderPayload.pharmacyId === undefined) {
-      try {
-        // lazy require to avoid circular imports at module load time
-        const { getPharmacyId } = await import('./db');
-        // but we're in same module; fallback: attempt to read config directly
-      } catch (e) {
-        // ignore - we'll attempt to read config below using direct getDoc if needed
-      }
-    }
-    // final guard: remove keys with undefined values to avoid Firestore errors
+    
+    // Remove undefined values but keep null/empty strings for address/phone
     Object.keys(orderPayload).forEach(k => {
       if (orderPayload[k] === undefined) delete orderPayload[k];
     });
@@ -162,7 +152,7 @@ export const placeOrder = async (orderData) => {
     return { orderId: orderRef.id };
   });
 
-  // AFTER the transaction: clear cart in a separate batch (no reads after writes in tx)
+  // Clear cart after order creation
   try {
     const cartCol = collection(db, 'users', orderData.customerId, 'cart');
     const cartSnap = await getDocs(cartCol);
@@ -172,11 +162,10 @@ export const placeOrder = async (orderData) => {
       await batch.commit();
     }
   } catch (e) {
-    // Non-fatal: order is placed; cart clear failed. You can toast a warning or retry.
     console.warn('Cart clear failed after order placement:', e);
   }
 
-  return result; // { orderId }
+  return result;
 };
 
 export const listenOrders = (uid, cb) => {

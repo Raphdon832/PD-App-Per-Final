@@ -1,18 +1,15 @@
 // src/components/Protected.jsx
 import React from 'react';
 import { useAuth } from '@/lib/auth';
+import { Navigate } from 'react-router-dom';
 
 export function RequireAuth({ children }) {
-  const { user, loading, profile } = useAuth();
-  console.log('RequireAuth:', { user, loading, profile });
-  if (loading) {
-    console.log('RequireAuth: loading...');
-    return <div className="p-6">Loading…</div>;
-  }
+  const { user } = useAuth();
+
   if (!user) {
-    console.log('RequireAuth: No user, please sign in.');
-    return <div className="p-6">Please sign in to continue.</div>;
+    return <Navigate to="/auth/landing" replace />;
   }
+
   return children;
 }
 

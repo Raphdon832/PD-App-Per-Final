@@ -131,16 +131,21 @@ function Shell() {
   const params = new URLSearchParams(location.search);
   const scrollTo = params.get('scrollTo') ? parseInt(params.get('scrollTo'), 10) : undefined;
 
-  // If user is not logged in, force them to the auth landing page unless they're already visiting an /auth route
-  if (!user && !location.pathname.startsWith('/auth')) {
-    console.log('Unauthenticated — redirecting to /auth/landing');
-    return <Navigate to="/auth/landing" replace />;
-  }
-
   // Show loading until profile is loaded
   if (user && profile === undefined) {
     console.log('Loading profile...');
     return <LoadingSkeleton lines={4} className="my-8" />;
+  }
+
+  // Block unverified users
+  if (user && !user.emailVerified) {
+    console.log('User not verified, redirecting to /verify-email');
+    return (
+      <Routes>
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="*" element={<Navigate to="/verify-email" replace />} />
+      </Routes>
+    );
   }
 
   // Redirect superuser to /superuser ONLY if on root path
@@ -157,6 +162,7 @@ function Shell() {
         <Route path="/auth/landing" element={<Landing />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
       </Route>
       {/* Superuser route - only for superuser role, uses BareLayout (no BottomNav) */}
       <Route element={<BareLayout />}>
@@ -181,6 +187,8 @@ function Shell() {
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
+      {/* Root redirect - redirect to landing if not authenticated, otherwise to home */}
+      <Route path="/" element={<RootRedirect />} />
     </Routes>
   );
 }
@@ -192,4 +200,15 @@ export default function App() {
       <Shell />
     </AuthProvider>
   );
+}
+
+// Component to handle root redirect logic
+function RootRedirect() {
+  const { user } = useAuth();
+  
+  if (!user) {
+    return <Navigate to="/auth/landing" replace />;
+  }
+  
+  return <Navigate to="/home" replace />;
 }
