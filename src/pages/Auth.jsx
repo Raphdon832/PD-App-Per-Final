@@ -29,7 +29,14 @@ export default function Auth() {
         await signIn(email, password);
         navigate('/');
       } else {
-        await signUp({ email, password, displayName, phone, address });
+        await signUp({ 
+          email, 
+          password, 
+          displayName, 
+          phone, 
+          address,
+          role: isPharmacy ? 'pharmacy' : 'customer'
+        });
         navigate('/');
       }
     } catch (e) {

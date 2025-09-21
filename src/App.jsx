@@ -126,13 +126,16 @@ function ProductDetailRoute() {
 
 function Shell() {
   console.log('Shell loaded');
-  const { user, profile } = useAuth();
+  const { user, profile, loading } = useAuth();
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const scrollTo = params.get('scrollTo') ? parseInt(params.get('scrollTo'), 10) : undefined;
 
-  // Redirect unauthenticated users to landing page
-  if (!user && location.pathname !== '/auth/landing' && location.pathname !== '/auth' && location.pathname !== '/auth/forgot-password') {
+  // Wait for auth to initialize before making redirect decisions
+  if (loading) return null;
+
+  // Redirect unauthenticated users to landing page (but allow /auth/*)
+  if (!user && !location.pathname.startsWith('/auth')) {
     return <Navigate to="/auth/landing" replace />;
   }
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { Fragment, useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 import { checkoutAsCustomer } from '@/lib/orders';
@@ -7,7 +7,6 @@ import { db } from '@/lib/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import { Dialog } from '@headlessui/react';
-import { Fragment, useRef } from 'react';
 
 export default function Checkout() {
   const { user, profile } = useAuth();
@@ -18,10 +17,13 @@ export default function Checkout() {
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(null);
+  const [orderSummary, setOrderSummary] = useState(null);
+  const [pharmacyInfo, setPharmacyInfo] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [paymentRef, setPaymentRef] = useState('');
   const navigate = useNavigate();
+  const modalRef = useRef(null);
 
   useEffect(() => {
     if (!user) {
@@ -65,7 +67,7 @@ export default function Checkout() {
       if (profile?.address !== address || profile?.phone !== phone) {
         await updateDoc(doc(db, 'users', user.uid), { address, phone });
       }
-      
+
       let pharmacyId;
       try {
         pharmacyId = await getPharmacyId();
@@ -82,7 +84,13 @@ export default function Checkout() {
         imageUrl: item.imageUrl,
         qty: item.qty || 1
       }));
-      
+
+      // capture local order summary (snapshot) before checkout clears cart
+      setOrderSummary({
+        items: cartItems.map(ci => ({ name: ci.name, quantity: ci.qty, price: ci.price, total: (ci.price || 0) * (ci.qty || 1) })),
+        total
+      });
+
       const result = await checkoutAsCustomer({
         user,
         pharmacyId,
@@ -90,6 +98,16 @@ export default function Checkout() {
         address,
         phone
       });
+
+      // fetch pharmacy info (phone/whatsapp) for success screen if available
+      try {
+        if (pharmacyId) {
+          const phDoc = await getDoc(doc(db, 'users', pharmacyId));
+          if (phDoc.exists()) setPharmacyInfo(phDoc.data());
+        }
+      } catch (err) {
+        console.warn('Failed fetching pharmacy info for whatsapp link', err);
+      }
 
       setSuccess(result.orderId);
       setShowPaymentModal(false);
@@ -102,19 +120,50 @@ export default function Checkout() {
 
   if (loading) return <LoadingSkeleton lines={6} className="my-8" />;
   if (success) {
+    const whatsappPhoneRaw = pharmacyInfo?.phone || pharmacyInfo?.whatsapp || '';
+    const whatsappPhone = whatsappPhoneRaw ? whatsappPhoneRaw.replace(/[^\d]/g, '') : '';
+    const prefill = `Hi! I just placed order ${success}. Here's my payment receipt.`;
+    const whatsappLink = whatsappPhone ? `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(prefill)}` : null;
+
     return (
       <div className="max-w-md mx-auto mt-12 p-6 bg-white rounded shadow">
         <h2 className="text-xl font-bold mb-2">Order Placed!</h2>
         <p className="mb-4">Your order has been placed successfully. Order ID: <span className="font-mono">{success}</span></p>
-        {paymentMethod === 'transfer' ? (
-          <div className="mb-4 text-orange-700 font-medium">
-            Payment not yet confirmed. You will be notified when the pharmacy confirms your payment.
-          </div>
-        ) : (
-          <div className="mb-4 text-orange-700 font-medium">
-            Order is pending.
+
+        {/* Order summary snapshot */}
+        {orderSummary && (
+          <div className="mb-4 border rounded p-3 bg-gray-50">
+            <h3 className="font-semibold mb-2">Order Summary</h3>
+            <div className="text-sm space-y-1">
+              {orderSummary.items.map((it, i) => (
+                <div key={i} className="flex justify-between">
+                  <div>{it.name} × {it.quantity}</div>
+                  <div>₦{(it.total || 0).toFixed(2)}</div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-2 pt-2 border-t flex justify-between font-semibold">
+              <div>Total</div>
+              <div>₦{(orderSummary.total || 0).toFixed(2)}</div>
+            </div>
           </div>
         )}
+
+        {/* Payment instruction with WhatsApp link */}
+        <div className="mb-4 text-sm text-gray-700">
+          <p className="mb-2">Send receipts of payment to our WhatsApp line</p>
+          {whatsappLink ? (
+            <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="inline-block px-4 py-2 bg-green-600 text-white rounded">
+              Open WhatsApp Chat with Pharmacy
+            </a>
+          ) : (
+            <div className="text-xs text-gray-500"></div>
+          )}
+        </div>
+
+        <div className="mb-4 text-orange-700 font-medium">
+          {paymentMethod === 'transfer' ? 'Payment not yet confirmed. You will be notified when the pharmacy confirms your payment.' : 'Order is pending.'}
+        </div>
         <button className="px-4 py-2 bg-brand-primary text-white rounded" onClick={() => navigate('/')}>Go to Home</button>
       </div>
     );
@@ -170,7 +219,7 @@ export default function Checkout() {
       {/* Payment Method Modal */}
       <Dialog open={showPaymentModal} onClose={() => setShowPaymentModal(false)} as={Fragment}>
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-auto">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-auto" ref={modalRef}>
             <Dialog.Title className="text-lg font-bold mb-2">Choose Payment Method</Dialog.Title>
             <div className="mb-4">
               <label className="flex items-center gap-2 mb-2">
